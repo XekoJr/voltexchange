@@ -1,0 +1,361 @@
+{
+  "info": {
+    "name": "VoltExchange API",
+    "description": "Coleção completa de endpoints para testar a API VoltExchange — BD II 2025/2026",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) {",
+                  "  pm.collectionVariables.set('token', res.token);",
+                  "  console.log('Token guardado automaticamente');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"email\": \"joao@voltexchange.com\",\n  \"password\": \"senha123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Regista novo utilizador e retorna JWT token."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) {",
+                  "  pm.collectionVariables.set('token', res.token);",
+                  "  console.log('Token guardado automaticamente');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao@voltexchange.com\",\n  \"password\": \"senha123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Autentica utilizador e retorna JWT token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚡ Meters (Contadores)",
+      "item": [
+        {
+          "name": "Listar Contadores do Utilizador",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/meters",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meters"]
+            },
+            "description": "Lista contadores do utilizador autenticado."
+          }
+        },
+        {
+          "name": "Registar Leitura — Normal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kwhLeitura\": 45.230,\n  \"dadosAudit\": {\n    \"temperatura\": 42,\n    \"voltagem\": 230,\n    \"erro_codigo\": null\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/meters/1/readings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meters", "1", "readings"]
+            },
+            "description": "Grava leitura normal (temperatura < 80, sem erro_codigo). ContadorId vai no path."
+          }
+        },
+        {
+          "name": "Registar Leitura — Anomalia Temperatura (trigger ativa)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kwhLeitura\": 12.500,\n  \"dadosAudit\": {\n    \"temperatura\": 95,\n    \"voltagem\": 228,\n    \"erro_codigo\": null\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/meters/1/readings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meters", "1", "readings"]
+            },
+            "description": "Temperatura > 80 — o trigger trg_DetectarAnomalias muda contador para MANUTENCAO."
+          }
+        },
+        {
+          "name": "Registar Leitura — Anomalia erro_codigo (trigger ativa)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kwhLeitura\": 8.100,\n  \"dadosAudit\": {\n    \"temperatura\": 45,\n    \"voltagem\": 215,\n    \"erro_codigo\": \"ERR_042\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/meters/1/readings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meters", "1", "readings"]
+            },
+            "description": "Presença de erro_codigo — o trigger trg_DetectarAnomalias muda contador para MANUTENCAO."
+          }
+        },
+        {
+          "name": "Listar Leituras por Período",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/meters/1/readings?inicio=2025-01-01T00:00:00&fim=2025-12-31T23:59:59",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meters", "1", "readings"],
+              "query": [
+                { "key": "inicio", "value": "2025-01-01T00:00:00" },
+                { "key": "fim", "value": "2025-12-31T23:59:59" }
+              ]
+            },
+            "description": "Lista leituras do contador 1 em 2025. Aproveita o particionamento."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔋 Market (Mercado)",
+      "item": [
+        {
+          "name": "Listar Ofertas Ativas",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/market/offers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "market", "offers"]
+            },
+            "description": "Lista ofertas com estado ATIVA, ordenadas por preço crescente."
+          }
+        },
+        {
+          "name": "Listar Ofertas por Região",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/market/offers?regiao=Norte",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "market", "offers"],
+              "query": [
+                { "key": "regiao", "value": "Norte" }
+              ]
+            },
+            "description": "Filtra ofertas ativas pela região Norte."
+          }
+        },
+        {
+          "name": "Criar Oferta de Venda",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidadeKwh\": 50.0,\n  \"precoUnitario\": 0.12,\n  \"regiao\": \"Norte\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/market/offers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "market", "offers"]
+            },
+            "description": "Cria nova oferta de venda de energia. Requer autenticação."
+          }
+        },
+        {
+          "name": "Compra Direta (sp_ExecutarCompraDireta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 10.5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/market/offers/1/buy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "market", "offers", "1", "buy"]
+            },
+            "description": "Compra imediata via sp_ExecutarCompraDireta. OfertaId vai no path. ACID: bloqueia oferta, debita/credita saldos."
+          }
+        },
+        {
+          "name": "Criar Ordem de Compra Futura",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidadeKwh\": 20.0,\n  \"precoMaximo\": 0.15,\n  \"regiao\": \"Norte\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/market/order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "market", "order"]
+            },
+            "description": "Cria ordem de compra futura. Se trigger auto-matching estiver ativo, sp_MatchingEngine dispara."
+          }
+        },
+        {
+          "name": "Criar Ordem — Sem Região",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidadeKwh\": 5.0,\n  \"precoMaximo\": 0.20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/market/order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "market", "order"]
+            },
+            "description": "Ordem sem preferência de região — matching aceita qualquer região."
+          }
+        },
+        {
+          "name": "Disparar Matching Engine (sp_MatchingEngine)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/market/match",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "market", "match"]
+            },
+            "description": "Dispara sp_MatchingEngine manualmente. OBRIGATÓRIO para avaliação."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛠️ Admin",
+      "item": [
+        {
+          "name": "Listar Anomalias JSONB",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/anomalies",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "anomalies"]
+            },
+            "description": "Query JSONB com índice GIN: temperatura > 80 OU presença de erro_codigo."
+          }
+        },
+        {
+          "name": "Listar Transações",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "transactions"]
+            },
+            "description": "Histórico completo de transações (diretas e matched)."
+          }
+        }
+      ]
+    }
+  ]
+}
