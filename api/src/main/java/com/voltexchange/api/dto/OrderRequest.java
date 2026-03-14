@@ -1,6 +1,3 @@
-// ============================================================
-// OrderRequest.java — POST /api/market/order
-// ============================================================
 package com.voltexchange.api.dto;
 
 import jakarta.validation.constraints.NotNull;

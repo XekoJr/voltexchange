@@ -1,6 +1,3 @@
-// ============================================================
-// RegisterRequest.java
-// ============================================================
 package com.voltexchange.api.dto;
 
 import jakarta.validation.constraints.Email;

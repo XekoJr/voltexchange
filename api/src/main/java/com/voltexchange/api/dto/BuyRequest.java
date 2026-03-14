@@ -1,6 +1,3 @@
-// ============================================================
-// BuyRequest.java — POST /api/market/buy
-// ============================================================
 package com.voltexchange.api.dto;
 
 import jakarta.validation.constraints.NotNull;
