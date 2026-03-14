@@ -1,30 +1,31 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
-    build: ./postgres
+    image: postgres:16
     container_name: voltexchange-db
     environment:
-      POSTGRES_DB: voltexchange
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
+      POSTGRES_DB: 
+      POSTGRES_USER: 
+      POSTGRES_PASSWORD: 
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres/init-scripts:/docker-entrypoint-initdb.d
+      - ./migrations/01-ddl-voltexchange.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./migrations/02-partitions.sql:/docker-entrypoint-initdb.d/02-partitions.sql
     networks:
       - voltexchange-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U root"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # Spring Boot API
   api:
-    build: ./api
+    build:
+      context: ./api
+      dockerfile: ../Dockerfile.gradle
     container_name: voltexchange-api
     depends_on:
       postgres:
@@ -33,6 +34,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voltexchange
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
+      SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: VoltExchange2026SecretKeyMuitoSegura123456789
     ports:
       - "8080:8080"
     networks:
