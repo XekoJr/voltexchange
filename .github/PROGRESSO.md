@@ -572,14 +572,14 @@
 
 **📊 Próximas Prioridades:**
 
-1. 🔴 **URGENTE BD**: Criar stored procedures (`04-procedures.sql`) - BLOQUEADOR para Checkpoint 1
-2. 🔴 **URGENTE BD**: Criar triggers (`05-triggers.sql`) - BLOQUEADOR para Checkpoint 1
-3. 🔴 **URGENTE BD**: Criar índices de performance (`03-indexes.sql`)
-4. 🟠 **IMPORTANTE**: Criar docker-compose.yml (PostgreSQL local)
-5. 🟠 **IMPORTANTE**: Seed massivo para Checkpoint 1 (`07-seed-massivo.sql`)
-6. 🟡 **MÉDIO**: Testes locais da API (Postman/curl)
-7. 🟡 **MÉDIO**: Deploy em cloud (Railway/Render)
-8. 🟢 **BAIXO**: application-prod.properties
+1. 🔴 **URGENTE P2**: Criar índices de performance (`03-indexes.sql`) - 3h
+2. 🔴 **URGENTE P2**: Criar sp_ExecutarCompraDireta (`04-procedures.sql` parte 1) - 3h - BLOQUEADOR CP1
+3. 🔴 **URGENTE P1**: Criar sp_MatchingEngine (`04-procedures.sql` parte 2) - 3h - BLOQUEADOR CP1
+4. 🔴 **URGENTE P1**: Criar triggers (`05-triggers.sql`) - 3h - BLOQUEADOR CP1
+5. 🟠 **IMPORTANTE P1**: Criar seed inicial (`06-seed-mini.sql`) - 2h
+6. 🟠 **IMPORTANTE P1**: Docker Compose (Semana 2) - 2h
+7. 🟡 **MÉDIO P1**: Testes locais e Postman Collection (Semana 2) - 6h
+8. 🟢 **BAIXO P2**: Seed massivo (Semana 3) - 5h
 
 ---
 
@@ -593,14 +593,14 @@
 - ✅ Segurança completa (JWT + BCrypt 12)
 - ✅ GlobalExceptionHandler funcional
 - ✅ 7 DTOs com validações
-- ❌ Falta: docker-compose.yml, application-prod.properties, testes
+- ❌ Falta (P1): sp_MatchingEngine, triggers, seed-mini, docker-compose, testes
 
 ### ⚠️ **Base de Dados - 35% COMPLETA**
 - ✅ Schema completo (6 tabelas com constraints)
 - ✅ Partições criadas (24 partições mensais)
-- ❌ **CRÍTICO**: Falta sp_ExecutarCompraDireta (ACID)
-- ❌ **CRÍTICO**: Falta sp_MatchingEngine (ACID)
-- ❌ **CRÍTICO**: Falta trg_DetectarAnomalias
+- ❌ **CRÍTICO (P2)**: Falta sp_ExecutarCompraDireta (ACID)
+- ❌ **CRÍTICO (P1)**: Falta sp_MatchingEngine (ACID)
+- ❌ **CRÍTICO (P1)**: Falta trg_DetectarAnomalias
 - ❌ Falta trg_ProtegerUtilizadores
 - ❌ Falta índices (GIN, B-tree, parciais)
 - ❌ Falta seeding massivo (500k+ leituras)
@@ -609,16 +609,22 @@
 
 ## 👥 Divisão de Trabalho
 
-### Pessoa 1 - API Spring Boot
-- Entities, Repositories, Services
-- Controllers e DTOs
-- Segurança (JWT + BCrypt)
-- Deploy em cloud
+### Pessoa 1 - API Spring Boot + Triggers/Seed
+- ✅ Entities, Repositories, Services (COMPLETO)
+- ✅ Controllers e DTOs (COMPLETO)
+- ✅ Segurança (JWT + BCrypt) (COMPLETO)
+- Stored Procedure: sp_MatchingEngine (Semana 1)
+- Triggers: trg_DetectarAnomalias + trg_ProtegerUtilizadores (Semana 1)
+- Seed inicial (06-seed-mini.sql) (Semana 1)
+- Docker Compose + Testes (Semana 2)
+- Postman Collection (Semana 2)
+- application-prod.properties (Semana 3)
+- Deploy em cloud (Semana 4)
 
 ### Pessoa 2 - Base de Dados PostgreSQL
-- ✅ Schema das tabelas
-- ✅ Partições
-- Índices de performance
-- Stored Procedures
-- Triggers
-- Seeding massivo
+- ✅ Schema das tabelas (COMPLETO)
+- ✅ Partições (COMPLETO)
+- Índices de performance (03-indexes.sql) (Semana 1)
+- Stored Procedure: sp_ExecutarCompraDireta (Semana 1)
+- Seeding massivo (07-seed-massivo.sql) (Semana 3)
+- Validações e otimizações EXPLAIN ANALYZE (Semana 3)

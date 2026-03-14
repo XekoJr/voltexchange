@@ -31,7 +31,7 @@
 
 | Semana | Prioridade | Responsável | Tempo Est. |
 |--------|-----------|-------------|------------|
-| **1** (restante) | 🔴 BD: Índices + Procedures + Triggers | Pessoa 2 | 14h |
+| **1** (restante) | 🔴 BD: Dividido entre ambos | **P1: 8h / P2: 6h** | 14h |
 | **2** | 🟠 API: Docker + Testes + Postman | Pessoa 1 | 8h |
 | **3** | 🟠 Integração + Seed Massivo | Pessoa 1 + Pessoa 2 | 12h |
 | **4** | 🟡 Deploy + Relatório + Defesa | Pessoa 1 + Pessoa 2 | 14h |
@@ -40,9 +40,11 @@
 
 ## 📋 SEMANA 1 (restante) — Completar Base de Dados
 
-### 🔴 PRIORIDADE MÁXIMA (Pessoa 2)
+### 🔴 PRIORIDADE MÁXIMA — Divisão de Trabalho
 
-#### 1. Índices de Performance ⚠️ CRÍTICO
+#### 👤 Pessoa 2 — Base de Dados Core (6h)
+
+##### 1. Índices de Performance ⚠️ CRÍTICO
 ```bash
 Criar: migrations/03-indexes.sql
 ```
@@ -55,42 +57,97 @@ Criar: migrations/03-indexes.sql
 - [ ] Executar EXPLAIN ANALYZE DEPOIS
 - **Tempo estimado**: 3h
 
-#### 2. Stored Procedures ⚠️ OBRIGATÓRIO CP1
+##### 2. Stored Procedure: sp_ExecutarCompraDireta ⚠️ OBRIGATÓRIO CP1
 ```bash
-Criar: migrations/04-procedures.sql
+Criar: migrations/04-procedures.sql (parte 1)
 ```
-- [ ] `sp_ExecutarCompraDireta` completa
-- [ ] `sp_MatchingEngine` completa
-- [ ] Testar ambas com dados mock
-- [ ] Documentar exceções
-- **Tempo estimado**: 6h
+- [ ] Assinatura da procedure (p_oferta_id, p_comprador_id, p_quantidade)
+- [ ] SELECT ... FOR UPDATE na oferta (bloqueio pessimista)
+- [ ] Validar oferta existe e está ATIVA
+- [ ] Validar quantidade disponível
+- [ ] Validar saldo do comprador suficiente
+- [ ] UPDATE saldo comprador (débito)
+- [ ] UPDATE saldo vendedor (crédito)
+- [ ] UPDATE quantidade_kwh da oferta (ou estado para COMPLETA)
+- [ ] INSERT em Transacoes (tipo='DIRETA')
+- [ ] COMMIT ou ROLLBACK com tratamento de exceções
+- [ ] Testar com dados mock
+- [ ] Documentar exceções (saldo insuficiente, oferta inativa)
+- **Tempo estimado**: 3h
 
-#### 3. Triggers ⚠️ OBRIGATÓRIO CP1
+---
+
+#### 👤 Pessoa 1 — Procedures + Triggers + Seed (8h)
+
+##### 3. Stored Procedure: sp_MatchingEngine ⚠️ OBRIGATÓRIO CP1
+```bash
+Criar/Completar: migrations/04-procedures.sql (parte 2)
+```
+- [ ] Loop por OrdensCompra com estado='PENDENTE' ORDER BY data_criacao
+- [ ] Para cada ordem buscar ofertas compatíveis:
+  - [ ] Preço oferta <= preço máximo ordem
+  - [ ] Região compatível (ou NULL em ambos)
+  - [ ] Estado='ATIVA'
+  - [ ] ORDER BY preco_unitario ASC, data_criacao ASC (FIFO)
+- [ ] SELECT ... FOR UPDATE na oferta escolhida
+- [ ] Calcular quantidade a transferir (MIN entre ordem e oferta)
+- [ ] UPDATE saldos (débito comprador, crédito vendedor)
+- [ ] UPDATE quantidades (ordem e oferta)
+- [ ] UPDATE estados (PARCIAL ou COMPLETA)
+- [ ] INSERT em Transacoes (tipo='MATCHED')
+- [ ] Logging com RAISE NOTICE
+- [ ] Tratamento de exceções
+- [ ] Testar com múltiplas ordens e ofertas
+- **Tempo estimado**: 3h
+
+##### 4. Triggers ⚠️ OBRIGATÓRIO CP1
 ```bash
 Criar: migrations/05-triggers.sql
 ```
-- [ ] Trigger `trg_DetectarAnomalias`
-- [ ] Trigger `trg_ProtegerUtilizadores`
-- [ ] Testar com casos reais
+- [ ] **trg_DetectarAnomalias** (AFTER INSERT ON Leituras)
+  - [ ] Função fn_DetectarAnomalias()
+  - [ ] Extrair temperatura do JSONB: (NEW.dados_audit->>'temperatura')::numeric
+  - [ ] Verificar se temperatura > 80 OU dados_audit ? 'erro_codigo'
+  - [ ] UPDATE Contadores SET estado='MANUTENCAO' WHERE contador_id = NEW.contador_id
+  - [ ] RAISE NOTICE com detalhes da anomalia
+- [ ] **trg_ProtegerUtilizadores** (BEFORE DELETE ON Utilizadores)
+  - [ ] Função fn_ProtegerUtilizadores()
+  - [ ] Verificar se OLD.saldo > 0
+  - [ ] Verificar se existem transações nos últimos 30 dias
+  - [ ] RAISE EXCEPTION se houver impedimentos
+- [ ] Testar com casos reais (leitura anómala, tentar deletar utilizador ativo)
 - **Tempo estimado**: 3h
 
-#### 4. Seed Inicial
+##### 5. Seed Inicial
 ```bash
 Criar: migrations/06-seed-mini.sql
 ```
-- [ ] 10 utilizadores
-- [ ] 10 contadores
-- [ ] 50 leituras (normais + anômalas)
-- [ ] 20 ofertas
-- [ ] 10 ordens
+- [ ] 10 utilizadores (saldos variados: 0, 50, 100, 200)
+- [ ] 10 contadores (distribuídos pelos utilizadores, regiões Norte/Centro/Sul)
+- [ ] 50 leituras:
+  - [ ] 40 normais (temperatura 20-60, sem erro_codigo)
+  - [ ] 10 anómalas (5 com temperatura > 80, 5 com erro_codigo)
+- [ ] 20 ofertas de venda (preços 0.10-0.18, regiões variadas)
+- [ ] 10 ordens de compra (preços máximos 0.12-0.20, algumas compatíveis)
+- [ ] Comentários indicando dados para testes específicos
 - **Tempo estimado**: 2h
 
-### 📝 Entregáveis da Semana 1 (Pessoa 2 → Pessoa 1)
+### 📝 Entregáveis da Semana 1
+**Pessoa 2:**
 - `03-indexes.sql` ✅
-- `04-procedures.sql` ✅
+- `04-procedures.sql` (sp_ExecutarCompraDireta) ✅
+- Documento com assinatura e exemplo de uso da procedure
+
+**Pessoa 1:**
+- `04-procedures.sql` (sp_MatchingEngine) ✅
 - `05-triggers.sql` ✅
 - `06-seed-mini.sql` ✅
-- Documento: assinaturas e exemplos de uso das procedures
+- Documento com assinatura e exemplo de uso do matching engine
+
+### 🤝 Coordenação
+- **Sexta tarde**: Pessoa 2 partilha 04-procedures.sql (parte 1) para Pessoa 1 adicionar parte 2
+- **Sábado**: Ambos testam procedures em conjunto
+- **Domingo**: Validação completa com seed-mini
 
 ---
 
@@ -326,17 +383,21 @@ Se houver tempo extra, implementar:
 
 ## 📊 RESUMO DE TEMPOS ESTIMADOS
 
-| Semana | Pessoa 1 (API) | Pessoa 2 (BD) | Total |
-|--------|----------------|---------------|-------|
-| 1 | — | 14h | 14h |
+| Semana | Pessoa 1 (API + Triggers + Seed) | Pessoa 2 (BD) | Total |
+|--------|----------------------------------|---------------|-------|
+| 1 | 8h | 6h | 14h |
 | 2 | 8h | — | 8h |
 | 3 | 6h | 6h | 12h |
 | 4 | 5h | 9h | 14h |
-| **TOTAL** | **19h** | **29h** | **48h** |
+| **TOTAL** | **27h** | **21h** | **48h** |
 
-**Por pessoa**: ~24h (aprox. 6h/semana)
+**Por pessoa**: Pessoa 1: 27h · Pessoa 2: 21h (média ~24h, ~6h/semana)
 
 ℹ️ **NOTA**: Tempo reduzido face à estimativa inicial porque **85% da API já está implementada**!
+
+**Divisão Semana 1:**
+- **Pessoa 1**: sp_MatchingEngine (3h) + Triggers (3h) + Seed (2h) = 8h
+- **Pessoa 2**: Índices (3h) + sp_ExecutarCompraDireta (3h) = 6h
 
 ---
 
