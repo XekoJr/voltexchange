@@ -1,3 +1,6 @@
+\echo ''
+\echo '>>> 01-schema.sql: a criar tabelas...'
+
 DROP TABLE IF EXISTS Transacoes CASCADE;
 DROP TABLE IF EXISTS OrdensCompra CASCADE;
 DROP TABLE IF EXISTS OfertasVenda CASCADE;
@@ -153,3 +156,6 @@ CREATE TABLE Transacoes (
     -- Validação: comprador != vendedor
     CONSTRAINT chk_transacoes_diferentes CHECK (comprador_id != vendedor_id)
 );
+
+\echo '>>> 01-schema.sql: CONCLUIDO — 6 tabelas criadas'
+\echo ''

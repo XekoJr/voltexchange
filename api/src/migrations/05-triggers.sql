@@ -3,6 +3,9 @@
 -- Triggers de automação e proteção de dados
 -- =============================================================================
 
+\echo ''
+\echo '>>> 05-triggers.sql: a criar triggers...'
+
 -- =============================================================================
 -- trg_DetectarAnomalias
 -- AFTER INSERT ON Leituras
@@ -135,3 +138,6 @@ CREATE TRIGGER trg_AutoMatching_Oferta
     AFTER INSERT ON OfertasVenda
     FOR EACH STATEMENT
     EXECUTE FUNCTION fn_AutoMatching();
+
+\echo '>>> 05-triggers.sql: CONCLUIDO — 4 triggers criados'
+\echo ''

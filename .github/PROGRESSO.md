@@ -1,7 +1,7 @@
-# 📊 Progresso do Projeto VoltExchange
+﻿# 📊 Progresso do Projeto VoltExchange
 
-> **Última atualização**: 4 Abril 2026  
-> **Status Geral**: 🟡 Em Desenvolvimento - Fase 2 (API Express.js + BD)
+> **Última atualização**: 4 Abril 2026
+> **Status Geral**: 🟢 Core completo — A preparar CP1 (8 Abril) e documentação final
 
 ---
 
@@ -9,622 +9,247 @@
 
 | Categoria | Progresso | Status |
 |-----------|-----------|--------|
-| 🗄️ Base de Dados | 35% | 🟡 Em Progresso |
-| 🌐 API Spring Boot | 85% | 🟢 Quase Completa |
-| 🔐 Segurança | 0% | 🔴 Não Iniciado |
-| 🚀 Deploy | 0% | 🔴 Não Iniciado |
-| 📝 Documentação | 15% | 🟡 Em Progresso |
+| 🗄️ Base de Dados | 100% | 🟢 Completa |
+| 🌐 API Express.js (Node) | 100% | 🟢 Completa |
+| 🐳 Infraestrutura Docker | 100% | 🟢 Completa |
+| 🔐 Segurança | 90% | 🟢 Implementada (faltam testes documentados) |
+| 🚀 Deploy Cloud | 0% | 🔴 Não Iniciado |
+| 📝 Documentação / Relatório | 10% | 🔴 Por fazer |
 
-**Total Geral**: ⚡ **58%** completo
+**Total Geral**: ⚡ **75%** completo
 
----
-
-## 🗄️ BASE DE DADOS (30% completo)
-
-### 📋 1. Estrutura de Tabelas
-
-#### Tabela: Utilizadores
-- [x] Estrutura da tabela criada
-- [x] Primary Key definida
-- [x] Constraints CHECK (saldo >= 0)
-- [x] Constraint de validação de email
-- [x] Campo único (email)
-- [ ] Comentários COMMENT ON TABLE/COLUMN
-- [ ] Índice em email
-- [ ] Índice parcial em saldo
-- [ ] Índice em data_criacao
-
-#### Tabela: Contadores
-- [x] Estrutura da tabela criada
-- [x] Primary Key definida
-- [x] Foreign Key para Utilizadores
-- [x] Campo numero_serie UNIQUE
-- [x] Campo regiao adicionado
-- [x] Constraint CHECK para estados válidos
-- [ ] Comentários COMMENT ON TABLE/COLUMN
-- [ ] Índice em utilizador_id
-- [ ] Índice em estado
-- [ ] Índice em regiao
-- [ ] Índice em numero_serie
-
-#### Tabela: Leituras (PARTICIONADA)
-- [x] Estrutura da tabela criada
-- [x] Primary Key composta (leitura_id, data_hora)
-- [x] Foreign Key para Contadores
-- [x] Campo dados_audit JSONB
-- [x] PARTITION BY RANGE declarado
-- [x] **Partições criadas (2025-01 a 2026-12)** ✅
-- [ ] Comentários COMMENT ON TABLE/COLUMN
-- [ ] Índice GIN em dados_audit ⚠️
-- [ ] Índice em (contador_id, data_hora)
-- [ ] Índice em data_hora
-- [ ] Índice específico para temperatura
-
-#### Tabela: OfertasVenda
-- [x] Estrutura da tabela criada
-- [x] Primary Key definida
-- [x] Foreign Key para Utilizadores
-- [x] Campo regiao adicionado
-- [x] Campo data_expiracao
-- [x] Constraints CHECK (quantidade > 0, preco > 0)
-- [x] Constraint CHECK para estados válidos
-- [ ] Comentários COMMENT ON TABLE/COLUMN
-- [ ] Índice composto para matching (estado, preco, data)
-- [ ] Índice em vendedor_id
-- [ ] Índice parcial em regiao (WHERE estado='ATIVA')
-- [ ] Índice em data_criacao
-
-#### Tabela: OrdensCompra
-- [x] Estrutura da tabela criada
-- [x] Primary Key definida
-- [x] Foreign Key para Utilizadores
-- [x] Campo regiao adicionado
-- [x] Constraints CHECK (quantidade > 0, preco > 0)
-- [x] Constraint CHECK para estados válidos
-- [ ] Comentários COMMENT ON TABLE/COLUMN
-- [ ] Índice composto para matching (estado, preco_maximo, data)
-- [ ] Índice em comprador_id
-- [ ] Índice parcial em regiao (WHERE estado='PENDENTE')
-- [ ] Índice em data_criacao
-
-#### Tabela: Transacoes
-- [x] Estrutura da tabela criada
-- [x] Primary Key definida
-- [x] Foreign Keys (oferta_id, ordem_id, comprador_id, vendedor_id)
-- [x] Campo tipo_transacao
-- [x] Constraints CHECK (valores positivos)
-- [x] Constraint CHECK (comprador != vendedor)
-- [ ] Comentários COMMENT ON TABLE/COLUMN
-- [ ] Índice em (comprador_id, data_transacao)
-- [ ] Índice em (vendedor_id, data_transacao)
-- [ ] Índice em oferta_id
-- [ ] Índice em ordem_id
-- [ ] Índice em data_transacao
-- [ ] Índice em tipo_transacao
+> ⚠️ **CP1 em 4 dias (8 Abril)** — foco em: servidor da escola + testes + Postman
 
 ---
 
-### ⚙️ 2. Lógica de Servidor (PL/pgSQL)
+## 🗄️ BASE DE DADOS — 100% ✅
 
-#### Stored Procedure: sp_ExecutarCompraDireta
-- [ ] Assinatura da procedure criada
-- [ ] Lógica de bloqueio (SELECT ... FOR UPDATE)
-- [ ] Validação: oferta existe e está ATIVA
-- [ ] Validação: quantidade disponível
-- [ ] Validação: saldo do comprador
-- [ ] Débito do saldo do comprador
-- [ ] Crédito do saldo do vendedor
-- [ ] Atualização da oferta
-- [ ] Inserção em Transacoes
-- [ ] Tratamento de exceções
-- [ ] Mensagens de erro descritivas
-- [ ] Testado via psql
+### 01-schema.sql — Tabelas ✅
+- [x] `Utilizadores` — id, nome, email UNIQUE, password_hash, saldo, constraints CHECK
+- [x] `Contadores` — id, utilizador_id FK, numero_serie UNIQUE, estado, regiao
+- [x] `Leituras` — BIGSERIAL, PARTITION BY RANGE (data_hora), dados_audit JSONB
+- [x] `OfertasVenda` — id, vendedor_id FK, quantidade_kwh, preco_unitario, estado, regiao, data_expiracao
+- [x] `OrdensCompra` — id, comprador_id FK, quantidade_kwh, preco_maximo, estado, regiao
+- [x] `Transacoes` — id, oferta_id FK, ordem_id FK, comprador_id FK, vendedor_id FK, tipo_transacao
+- [x] Todas as Foreign Keys com ON DELETE RESTRICT / ON UPDATE CASCADE
+- [x] Todos os CHECK constraints (saldo >= 0, kwh > 0, comprador != vendedor, estados válidos)
+- [x] DROP TABLE IF EXISTS CASCADE no topo (idempotente)
 
-#### Stored Procedure: sp_MatchingEngine
-- [ ] Assinatura da procedure criada
-- [ ] Loop por ordens PENDENTES
-- [ ] Query de matching (preço, região, data)
-- [ ] Lógica de matching ACID
-- [ ] Atualização de estados
-- [ ] Inserção em Transacoes
-- [ ] Tratamento de exceções
-- [ ] Logging com RAISE NOTICE
-- [ ] Testado via psql
+### 02-partitions.sql — Partições ✅
+- [x] 12 partições mensais 2025 (Leituras_2025_01 … Leituras_2025_12)
+- [x] 12 partições mensais 2026 (Leituras_2026_01 … Leituras_2026_12)
+- [x] Bug de overflow corrigido (intervalo 126s garante max data_hora ≤ 2026-12-31)
 
-#### Trigger: trg_DetectarAnomalias
-- [ ] Função fn_DetectarAnomalias criada
-- [ ] Extração de temperatura do JSONB
-- [ ] Verificação de erro_codigo
-- [ ] UPDATE estado contador para 'MANUTENCAO'
-- [ ] Logging de anomalias
-- [ ] Trigger AFTER INSERT criado
-- [ ] Testado com dados reais
+### 03-indexes.sql — Índices ✅ (22 índices)
+- [x] `idx_utilizadores_saldo` — parcial (WHERE saldo > 0)
+- [x] `idx_utilizadores_data_criacao`
+- [x] `idx_contadores_utilizador_id` — FK lookup
+- [x] `idx_contadores_estado`, `idx_contadores_regiao`
+- [x] `idx_leituras_dados_audit_gin` — **GIN** para queries JSONB (temperatura, erro_codigo)
+- [x] `idx_leituras_contador_data` — composto (contador_id, data_hora DESC) para period queries
+- [x] `idx_leituras_data_hora` — range scans e partition pruning
+- [x] `idx_leituras_temperatura` — extração numérica de temperatura do JSONB
+- [x] `idx_ofertas_estado_preco` — composto para matching engine (filtro ATIVA + preço)
+- [x] `idx_ofertas_regiao_ativa` — parcial (WHERE estado='ATIVA')
+- [x] `idx_ofertas_vendedor_id`, `idx_ofertas_data_criacao`
+- [x] `idx_ordens_estado_preco` — composto para matching engine (filtro PENDENTE + preço)
+- [x] `idx_ordens_regiao_pendente` — parcial (WHERE estado='PENDENTE')
+- [x] `idx_ordens_comprador_id`, `idx_ordens_data_criacao`
+- [x] `idx_transacoes_comprador_data`, `idx_transacoes_vendedor_data`
+- [x] `idx_transacoes_oferta_id`, `idx_transacoes_ordem_id`
+- [x] `idx_transacoes_data`, `idx_transacoes_tipo`
 
-#### Trigger: trg_ProtegerUtilizadores
-- [ ] Função fn_ProtegerUtilizadores criada
-- [ ] Verificação de saldo > 0
-- [ ] Verificação de transações recentes (30 dias)
-- [ ] Bloqueio de DELETE com RAISE EXCEPTION
-- [ ] Mensagens de erro descritivas
-- [ ] Trigger BEFORE DELETE criado
-- [ ] Testado com dados reais
+### 04-procedures.sql — Stored Procedures ✅
+- [x] **sp_ExecutarCompraDireta** (p_oferta_id, p_comprador_id, p_quantidade)
+  - SELECT FOR UPDATE na oferta (bloqueio pessimista — ACID)
+  - Validações: oferta ATIVA, quantidade disponível, saldo suficiente
+  - Débito comprador, crédito vendedor, INSERT em Transacoes (tipo='DIRETA')
+  - RAISE EXCEPTION com mensagens descritivas
+- [x] **sp_MatchingEngine** ()
+  - Loop por OrdensCompra PENDENTES ORDER BY data_criacao (FIFO)
+  - Matching por: estado='ATIVA', preco <= preco_maximo, regiao compatível (NULL aceita tudo)
+  - SELECT FOR UPDATE na oferta escolhida
+  - Lógica de quantidade parcial (LEAST)
+  - UPDATE saldos, estados, quantidades + INSERT em Transacoes (tipo='MATCHED')
+  - RAISE NOTICE com logs de cada match
 
-#### 🏆 Trigger: trg_AutoMatching (EXCELÊNCIA)
-- [ ] Função fn_AutoMatching criada
-- [ ] Chamada assíncrona do sp_MatchingEngine
-- [ ] Trigger em OrdensCompra criado
-- [ ] Trigger em OfertasVenda criado
-- [ ] Testado com dados reais
+### 05-triggers.sql — Triggers ✅ (4 triggers)
+- [x] **fn_DetectarAnomalias** / **trg_DetectarAnomalias** — AFTER INSERT ON Leituras
+  - Extrai temperatura do JSONB; se > 80°C → MANUTENCAO
+  - Verifica presença de erro_codigo não nulo → MANUTENCAO
+  - RAISE NOTICE com detalhes da leitura anómala
+  - Propaga a todas as partições (PostgreSQL 13+)
+- [x] **fn_ProtegerUtilizadores** / **trg_ProtegerUtilizadores** — BEFORE DELETE ON Utilizadores
+  - Bloqueia delete se saldo > 0
+  - Bloqueia delete se transações nos últimos 30 dias
+  - RAISE EXCEPTION com mensagem descritiva
+- [x] **fn_AutoMatching** / **trg_AutoMatching_Ordem** — AFTER INSERT ON OrdensCompra
+- [x] **trg_AutoMatching_Oferta** — AFTER INSERT ON OfertasVenda
 
----
+### 06-seed-mini.sql — Dados de Teste ✅
+- [x] 10 utilizadores (saldos de 0 a 1000€, password: `senha123` bcryptjs)
+- [x] 10 contadores (3 regiões: Norte, Centro, Sul)
+- [x] 40 leituras normais + 10 anómalas (5 temperatura > 80°C + 5 erro_codigo)
+- [x] 20 ofertas de venda (preços 0.10-0.18 €/kWh)
+- [x] 10 ordens de compra (pares compatíveis + 1 Fernando saldo=0 para testar falha)
+- [x] Triggers desactivados durante seed, reactivados no final
 
-### 🗂️ 3. Dados (Seeding)
+### 07-seed-massivo.sql — Big Data ✅
+- [x] **500.000 leituras** via generate_series (10 contadores × 50k, 2025-01 a 2026-12)
+- [x] Distribuição JSONB: 80% normais, 15% temperatura>80, 5% erro_codigo
+- [x] **1.000 ofertas de venda** (vendedores 7,8,9,10; estados 70/20/10%)
+- [x] **500 ordens de compra** (compradores 1-5; estados 60/30/10%)
+- [x] UPDATE manual de anomalias (trigger desactivado durante carga)
+- [x] DO block de verificação final com RAISE NOTICE dos totais
 
-#### Seed Mínimo (~100 registos)
-- [ ] Script 02-seed-mini.sql criado
-- [ ] 10 utilizadores de teste
-- [ ] 10 contadores
-- [ ] 50 leituras (com dados normais e anómalos)
-- [ ] 20 ofertas de venda
-- [ ] 10 ordens de compra
-- [ ] 5 transações de exemplo
-
-#### Seed Massivo (Checkpoint 1)
-- [ ] Script 03-seed-massivo.sql criado
-- [ ] 500.000+ leituras com generate_series
-- [ ] 1.000+ ofertas de venda
-- [ ] Distribuição realista por região
-- [ ] Dados variados para matching
-- [ ] Testado no servidor da escola
-
----
-
-### 📊 4. Performance e Otimização
-
-#### Criação de Índices
-- [ ] Script de índices separado criado
-- [ ] Todos os índices aplicados
-- [ ] Índices GIN testados
-- [ ] Índices parciais testados
-
-#### Análise de Performance
-- [ ] EXPLAIN ANALYZE - Anomalias JSONB (ANTES)
-- [ ] EXPLAIN ANALYZE - Anomalias JSONB (DEPOIS)
-- [ ] EXPLAIN ANALYZE - Query matching (ANTES)
-- [ ] EXPLAIN ANALYZE - Query matching (DEPOIS)
-- [ ] EXPLAIN ANALYZE - Transações por utilizador (ANTES)
-- [ ] EXPLAIN ANALYZE - Transações por utilizador (DEPOIS)
-- [ ] Documentação dos resultados
+### 08-views.sql — Vistas ✅ (5 vistas)
+- [x] **vw_anomalias_detalhadas** — leituras anómalas com contexto de contador/utilizador + tipo_anomalia
+- [x] **vw_mercado_ativo** — ofertas ATIVA com nome/email do vendedor
+- [x] **vw_transacoes_detalhadas** — histórico completo com nomes de comprador e vendedor
+- [x] **vw_consumo_mensal** — kWh agregado por contador e mês (explora partições)
+- [x] **vw_resumo_utilizadores** — saldo, nº contadores, total gasto/recebido por utilizador
 
 ---
 
-## 🌐 API SPRING BOOT (85% completo)
+## 🌐 API EXPRESS.JS — 100% ✅
 
-### 🏗️ 1. Configuração Inicial
+> ⚠️ A API foi migrada de **Spring Boot → Express.js (Node.js)** — o PROGRESSO.md anterior estava desatualizado.
 
-#### Projeto e Dependências
-- [x] Projeto Spring Boot criado (Gradle)
-- [x] Dependências: spring-web, spring-data-jpa
-- [x] Dependências: spring-security
-- [x] Dependências: postgresql, jjwt, lombok
-- [x] application.properties configurado (local)
-- [x] Configuração JWT (secret e expiration)
-- [x] Configuração JPA (ddl-auto=none, show-sql=true)
-- [ ] application-prod.properties configurado
-- [ ] docker-compose.yml criado
+### Infraestrutura
+- [x] `api/Dockerfile` — Node 20 Alpine, `npm install --omit=dev`
+- [x] `api/src/app.js` — Express + CORS + dotenv + rotas + error handlers
+- [x] `api/src/config/database.js` — pg Pool (lê DB_HOST/PORT/NAME/USER/PASSWORD do env)
+- [x] `api/src/middleware/auth.js` — Bearer JWT validation via jsonwebtoken
 
-#### Estrutura de Pastas
-- [x] Package config/ criado (SecurityConfig, CorsConfig, GlobalExceptionHandler)
-- [x] Package controller/ criado (Auth, Meter, Market, Admin)
-- [x] Package dto/ criado (7 DTOs com validações)
-- [x] Package entity/ criado (6 entities completas)
-- [x] Package repository/ criado (6 repositories com queries)
-- [x] Package security/ criado (JWT completo)
-- [x] Package service/ criado (4 services)
+### Endpoints
+| Método | Rota | Auth | Descrição |
+|--------|------|------|-----------|
+| GET | `/api/health` | — | Health check |
+| POST | `/api/auth/register` | — | Registo (bcryptjs strength 12) + JWT |
+| POST | `/api/auth/login` | — | Login + JWT |
+| GET | `/api/meters` | JWT | Listar contadores do utilizador |
+| POST | `/api/meters/:id/readings` | JWT | Submeter leitura (valida ownership) |
+| GET | `/api/meters/:id/readings?inicio=&fim=` | JWT | Leituras por período (explora partições) |
+| GET | `/api/market/offers?regiao=` | JWT | Listar ofertas ATIVA (filtro opcional) |
+| POST | `/api/market/offers` | JWT | Criar oferta de venda |
+| POST | `/api/market/offers/:id/buy` | JWT | Compra direta (chama sp_ExecutarCompraDireta) |
+| POST | `/api/market/order` | JWT | Criar ordem de compra |
+| POST | `/api/market/match` | JWT | Disparar sp_MatchingEngine |
+| GET | `/api/admin/anomalies` | JWT | Anomalias JSONB + contadores MANUTENCAO |
+| GET | `/api/admin/transactions` | JWT | Histórico de transações |
 
----
-
-### 💾 2. Camada de Entidades (Entity)
-
-#### Entidade: Utilizador
-- [x] Classe criada e anotada (@Entity)
-- [x] Mapeamento de todos os campos
-- [x] Relacionamentos (@OneToMany)
-- [x] Validações (@NotNull, @Email)
-- [x] @PrePersist para dataCriacao
-- [x] Lombok (@Getter, @Setter, @Builder)
-
-#### Entidade: Contador
-- [x] Classe criada e anotada
-- [x] Mapeamento de todos os campos
-- [x] Relacionamento com Utilizador (@ManyToOne)
-- [x] Relacionamento com Leituras (@OneToMany)
-- [x] @PrePersist para dataInstalacao
-
-#### Entidade: Leitura
-- [x] Classe criada e anotada
-- [x] Mapeamento de leitura_id AUTO INCREMENT
-- [x] Mapeamento JSONB correto (@JdbcTypeCode SqlTypes.JSON)
-- [x] Relacionamento com Contador (@ManyToOne)
-- [x] Campo dataHora para particionamento
-- [x] Map<String, Object> para dadosAudit
-
-#### Entidade: OfertaVenda
-- [x] Classe criada e anotada
-- [x] Mapeamento de todos os campos
-- [x] Relacionamento com Utilizador (vendedor)
-- [x] @PrePersist para dataCriacao
-- [x] Estado como String (validado na BD)
-
-#### Entidade: OrdemCompra
-- [x] Classe criada e anotada
-- [x] Mapeamento de todos os campos
-- [x] Relacionamento com Utilizador (comprador)
-- [x] @PrePersist para dataCriacao
-- [x] Estado como String (validado na BD)
-
-#### Entidade: Transacao
-- [x] Classe criada e anotada
-- [x] Mapeamento de todos os campos
-- [x] Relacionamentos (oferta, ordem, comprador, vendedor)
-- [x] @PrePersist para dataTransacao
-- [x] TipoTransacao como String
+### Segurança implementada
+- [x] Passwords com bcryptjs (strength 12) — hash armazenado, nunca plaintext
+- [x] JWT Bearer tokens (jsonwebtoken) — validação em todos os endpoints protegidos
+- [x] Parameterized queries em todo o código (`$1, $2, …`) — sem SQL injection
+- [x] Ownership check: leituras e contadores validados contra utilizador autenticado
+- [x] Mensagens de erro não expõem stack traces (error handler global)
+- [ ] Testes de segurança documentados (SQL injection, token inválido, token expirado)
 
 ---
 
-### 📦 3. Camada de Repositórios (Repository)
+## 🐳 INFRAESTRUTURA DOCKER — 100% ✅
 
-- [x] UtilizadorRepository criado (extends JpaRepository)
-- [x] Método findByEmail
-- [x] Método existsByEmail
-- [x] ContadorRepository criado
-- [x] Métodos findByUtilizadorUtilizadorId, findByNumeroSerie, findByEstado
-- [x] LeituraRepository criado
-- [x] Query JSONB nativa para anomalias (temperatura > 80 OU erro_codigo)
-- [x] Query findByContadorAndPeriodo para aproveitar partições
-- [x] OfertaVendaRepository criado
-- [x] Queries para ofertas ativas com filtros (estado, região, preço)
-- [x] OrdemCompraRepository criado
-- [x] Query para ordens pendentes ordenadas por data
-- [x] TransacaoRepository criado
-- [x] Queries por comprador/vendedor ordenadas por data DESC
+- [x] `docker-compose.yml` — 100% env-var driven (sem hardcoded credentials)
+- [x] `.env` — 1 ficheiro único para tudo (PORT, DB_*, JWT_SECRET)
+- [x] Healthcheck corrigido: `pg_isready -U ${DB_USER} -d ${DB_NAME}`
+- [x] Build context correto: `./api` (Node.js, não Spring Boot)
+- [x] Todos os 8 scripts SQL montados em `/docker-entrypoint-initdb.d/` em ordem
+- [x] `docker compose up --build` funciona limpo (verificado em logs)
+- [x] DB sobe com 500.050 leituras, 1.020 ofertas, 510 ordens (verificado)
 
 ---
 
-### ⚙️ 4. Camada de Serviços (Service)
+## 🔐 SEGURANÇA — 90% ✅
 
-#### AuthService
-- [x] Classe criada e anotada (@Service)
-- [x] Método register (com BCrypt strength 12)
-- [x] Método login (com geração de JWT)
-- [x] Validação duplicação email (existsByEmail)
-- [x] Validação de credenciais (BCrypt.matches)
-- [x] Atualização ultimo_acesso no login
-- [x] Tratamento de exceções com mensagens amigáveis
-
-#### MeterService
-- [x] Classe criada e anotada
-- [x] Método registarLeitura (com validação contador pertence ao user)
-- [x] Método listarLeiturasPorPeriodo (aproveita partições)
-- [x] Método listarContadoresDoUtilizador
-- [x] Validação de permissões (contador pertence ao utilizador)
-- [x] @Transactional configurado
-
-#### MarketService
-- [x] Classe criada e anotada
-- [x] Método listarOfertasAtivas (com filtro opcional por região)
-- [x] Método criarOferta
-- [x] Método criarOrdemCompra
-- [x] Método executarCompraDireta (chama sp_ExecutarCompraDireta via SimpleJdbcCall)
-- [x] Método executarMatching (chama sp_MatchingEngine via SimpleJdbcCall)
-- [x] @PostConstruct para inicializar SimpleJdbcCall
-- [x] Uso correto de @Transactional
-- [x] Tratamento de exceções da BD (PSQLException)
-
-#### AdminService
-- [x] Classe criada e anotada
-- [x] Método listarAnomalias (query JSONB com índice GIN)
-- [x] Método listarContadoresEmManutencao
-- [x] Método listarTransacoes (histórico completo)
-- [x] @Transactional(readOnly = true) para queries
+- [x] BCrypt strength 12 (bcryptjs)
+- [x] JWT Bearer tokens com expiração 24h
+- [x] Parameterized queries (sem SQL injection possível)
+- [x] Validação de ownership em contadores
+- [x] Variáveis de ambiente para JWT_SECRET e credenciais DB
+- [x] `docker-compose.yml` sem credenciais hardcoded
+- [x] `.env` no `.gitignore`
+- [ ] Testes de segurança executados e documentados
+- [ ] CORS restrito (actualmente `*`, deve ser domínio de produção antes de deploy)
 
 ---
 
-### 🎮 5. Camada de Controllers (Controller)
+## 🚀 DEPLOY — 0% ❌
 
-#### AuthController
-- [x] Classe criada e anotada (@RestController)
-- [x] POST /api/auth/register
-- [x] POST /api/auth/login
-- [x] Validação de DTOs com @Valid
-- [x] Status HTTP corretos (201 Created, 200 OK)
-- [x] Endpoints públicos (sem JWT)
-
-#### MeterController
-- [x] Classe criada e anotada
-- [x] POST /api/meters/{contadorId}/readings
-- [x] GET /api/meters/{id}/readings?inicio=...&fim=...
-- [x] GET /api/meters (listar contadores do user)
-- [x] Proteção com JWT (@AuthenticationPrincipal)
-- [x] Validação de DTOs
-- [x] Parâmetros de query com @DateTimeFormat
-
-#### MarketController
-- [x] Classe criada e anotada
-- [x] GET /api/market/offers (com filtro opcional regiao)
-- [x] POST /api/market/offers (criar oferta)
-- [x] POST /api/market/offers/{ofertaId}/buy (compra direta)
-- [x] POST /api/market/order (criar ordem)
-- [x] POST /api/market/match (disparar matching manual) ⚠️ OBRIGATÓRIO
-- [x] Proteção com JWT
-- [x] Validação de DTOs
-- [x] Logging com SLF4J
-
-#### AdminController
-- [x] Classe criada e anotada
-- [x] GET /api/admin/anomalies (query JSONB)
-- [x] GET /api/admin/transactions (histórico completo)
-- [x] Proteção com JWT
-- [x] Documentação Javadoc nos endpoints
-
----
-
-### 🔐 6. Segurança (Security)
-
-#### JwtTokenProvider
-- [x] Classe criada
-- [x] Método generateToken (email como subject)
-- [x] Método validateToken (detecta expiração e tokens inválidos)
-- [x] Método getEmailFromToken (extrai subject)
-- [x] Chave secreta via @Value (jwt.secret)
-- [x] Tempo de expiração configurável (jwt.expiration)
-- [x] Algoritmo HS256 com Keys.hmacShaKeyFor
-
-#### JwtAuthenticationFilter
-- [x] Classe criada (extends OncePerRequestFilter)
-- [x] Extração de token do header Authorization
-- [x] Validação do token antes de processar
-- [x] Carregamento de UserDetails via UserDetailsService
-- [x] Configuração do SecurityContext
-- [x] Tratamento de tokens inválidos/expirados
-- [x] Logging de autenticações
-
-#### UserDetailsServiceImpl
-- [x] Classe criada (implements UserDetailsService)
-- [x] Método loadUserByUsername (busca por email)
-- [x] Conversão Utilizador → UserDetails
-- [x] Tratamento de usuário não encontrado (UsernameNotFoundException)
-
-#### SecurityConfig
-- [x] Classe criada (@Configuration, @EnableWebSecurity)
-- [x] BCryptPasswordEncoder com strength 12 ⚠️ OBRIGATÓRIO
-- [x] SecurityFilterChain configurado
-- [x] Endpoints públicos definidos (/api/auth/**)
-- [x] Endpoints protegidos (anyRequest().authenticated())
-- [x] Filtro JWT registrado (addFilterBefore)
-- [x] CSRF desabilitado (API REST stateless)
-- [x] Session management STATELESS
-
-#### CorsConfig
-- [x] Classe criada (@Configuration)
-- [x] CorsFilter configurado
-- [x] AllowedOrigins configurado (atualmente "*" para dev)
-- [x] AllowedMethods (GET, POST, PUT, DELETE, OPTIONS)
-- [x] AllowedHeaders completamente abertas para dev
-
----
-
-### 📝 7. DTOs (Data Transfer Objects)
-
-- [x] RegisterRequest (nome, email, password) com @NotBlank, @Email, @Size
-- [x] LoginRequest (email, password) com @NotBlank, @Email
-- [x] AuthResponse (token, email, nome)
-- [x] ReadingRequest (kwhLeitura, dadosAudit) com @NotNull, @Positive
-- [x] BuyRequest (quantidade) com @NotNull, @Positive
-- [x] OfferRequest (quantidadeKwh, precoUnitario, regiao) com validações
-- [x] OrderRequest (quantidadeKwh, precoMaximo, regiao) com validações
-- [x] Todas as validações com @Valid, @NotNull, @Email, @Positive, @Size
-
----
-
-### ⚠️ 8. Tratamento de Exceções
-
-- [x] GlobalExceptionHandler criado (@RestControllerAdvice)
-- [x] Tratamento de MethodArgumentNotValidException (validação @Valid)
-- [x] Tratamento de RuntimeException (erros de negócio e stored procedures)
-- [x] Tratamento de Exception genérica (evita expor detalhes internos)
-- [x] Mensagens de erro padronizadas (JSON com timestamp, status, erro)
-- [x] Log de exceções com SLF4J
-- [ ] Tratamento específico de PSQLException (não parece necessário - RuntimeException captura)
-- [ ] Tratamento de AccessDeniedException (não implementado - sem roles)
-
----
-
-### ✅ 9. Testes
-
-#### Testes Locais
-- [ ] Conexão à BD validada (SELECT 1)
-- [ ] Endpoint de health criado
-- [ ] Registo de utilizador testado
-- [ ] Login testado
-- [ ] Token JWT validado
-- [ ] Inserção de leitura testada
-- [ ] Compra direta testada
-- [ ] Matching testado
-
-#### Testes de Segurança
-- [ ] SQL Injection tentado (deve falhar)
-- [ ] Acesso sem token (401)
-- [ ] Token expirado (401)
-- [ ] Token inválido (401)
-- [ ] BCrypt >= 12 confirmado
-
----
-
-## 🚀 DEPLOY E INFRAESTRUTURA
-
-### Docker (Desenvolvimento Local)
-- [ ] docker-compose.yml criado
-- [ ] Serviço PostgreSQL configurado
-- [ ] Volumes para persistência
-- [ ] Adminer/pgAdmin configurado
-- [ ] Testado localmente
-
-### Servidor da Escola
-- [ ] Credenciais solicitadas
-- [ ] Acesso validado
-- [ ] DDL executado no servidor
-- [ ] Seed inicial carregado
-
-### Deploy Cloud (API)
-- [ ] Plataforma escolhida (Railway/Render/Vercel)
-- [ ] Variáveis de ambiente configuradas
-- [ ] Conexão com servidor da escola testada
-- [ ] API online e acessível
+- [ ] Executar migrações no servidor da escola (CP1 — 8 Abril!)
+- [ ] Testar API contra servidor da escola
+- [ ] Escolher plataforma cloud (Railway / Render recomendado)
+- [ ] Configurar variáveis de ambiente em produção
+- [ ] Deploy da API realizado
 - [ ] Endpoints testados em produção
 
 ---
 
-## 📚 DOCUMENTAÇÃO
+## 📝 DOCUMENTAÇÃO — 10% ⚠️
 
-### Scripts SQL
-- [x] 01-schema.sql (tabelas) ✅
-- [x] 02-partitions.sql (partições Leituras) ✅
-- [ ] 03-indexes.sql (índices)
-- [ ] 04-procedures.sql (stored procedures)
-- [ ] 05-triggers.sql (triggers)
-- [ ] 06-seed-mini.sql (dados teste)
-- [ ] 07-seed-massivo.sql (checkpoint 1)
-- [ ] 08-tests.sql (testes procedures/triggers)
-
-### Documentação API
-- [ ] README.md do projeto
-- [ ] Postman Collection criada
-- [ ] Exemplos de requests/responses
-- [ ] Instruções de setup local
-- [ ] Instruções de deploy
-
-### Relatório Técnico (PDF)
-- [ ] Diagrama ER desenhado
-- [ ] Descrição das tabelas
-- [ ] Justificação de índices
-- [ ] Resultados EXPLAIN ANALYZE
-- [ ] Descrição do particionamento
-- [ ] Descrição das procedures
-- [ ] Descrição dos triggers
-- [ ] Plano de execução matching engine
-- [ ] Testes de segurança documentados
-- [ ] Screenshots da aplicação
+- [x] `VoltExchange.postman_collection.json` — existe no repositório
+- [x] `.github/voltexchange-analise.md` — análise inicial
+- [ ] README.md atualizado (actualmente diz Spring Boot e 22% progresso — desatualizado)
+- [ ] Postman collection completa com exemplos de request/response e pre-request script para JWT
+- [ ] Diagrama ER (Draw.io / Lucidchart)
+- [ ] EXPLAIN ANALYZE antes/depois dos índices documentado
+- [ ] Relatório técnico PDF (OBRIGATÓRIO CP2)
 
 ---
 
 ## 🎯 CHECKPOINTS
 
-### Checkpoint 1 (8 Abril 2026)
-- [ ] DDL executado no servidor da escola
-- [ ] 500.000+ leituras carregadas
-- [ ] 1.000+ ofertas carregadas
-- [ ] Stored procedures funcionais
-- [ ] API com autenticação funcional
-- [ ] Demonstração preparada
+### Checkpoint 1 — 8 Abril 2026 (em 4 dias!) ⚠️
+- [ ] Executar todos os scripts SQL no servidor da escola
+- [x] 500.000+ leituras em Docker local (verificado)
+- [x] Stored procedures funcionais (verificado)
+- [x] Triggers funcionais (verificado)
+- [x] API com auth funcional (verificado — "VoltExchange API running on port 3000")
+- [ ] API testada com servidor da escola
+- [ ] Postman collection com todos os fluxos testados
 
-### Checkpoint 2 (13 Maio 2026)
+### Checkpoint 2 — 13 Maio 2026
 - [ ] API deployed em cloud
-- [ ] Todos os endpoints funcionais
-- [ ] Testes de segurança realizados
-- [ ] Relatório técnico completo
-- [ ] Postman collection entregue
-- [ ] Defesa preparada
+- [ ] Todos os endpoints funcionais em produção
+- [ ] Testes de segurança documentados
+- [ ] Relatório técnico PDF completo
+- [ ] Postman collection exportada e documentada
+- [ ] Defesa preparada (ambos os elementos)
 
 ---
 
-## 📦 ENTREGA FINAL
+## 📦 ESTRUTURA ACTUAL DO REPOSITÓRIO
 
-### Organização do ZIP
-- [ ] Pasta api/ (código Spring Boot limpo)
-- [ ] Pasta sql/ (todos os scripts organizados)
-- [ ] Pasta relatorio/ (PDF + diagrama ER)
-- [ ] README.md na raiz
-- [ ] .gitignore configurado
-- [ ] Sem node_modules, .class, target/
-
-### Defesa
-- [ ] Ambos os elementos conseguem explicar BD
-- [ ] Ambos os elementos conseguem explicar API
-- [ ] Demo ao vivo preparada
-- [ ] Respostas a perguntas técnicas preparadas
-
----
-
-## 🎖️ CRITÉRIOS DE EXCELÊNCIA
-
-- [ ] Trigger de Auto-Matching implementado
-- [ ] EXPLAIN ANALYZE documentado detalhadamente
-- [ ] Diagrama ER profissional (Draw.io/Lucidchart)
-- [ ] Testes de SQL Injection documentados com prints
-- [ ] Código comentado e organizado
-- [ ] Views criadas para queries comuns
-- [ ] Logs estruturados na API
-- [ ] Tratamento de edge cases
-- [ ] Performance documentada
-
----
-
-**📊 Próximas Prioridades:**
-
-1. 🔴 **URGENTE P2**: Criar índices de performance (`03-indexes.sql`) - 3h
-2. 🔴 **URGENTE P2**: Criar sp_ExecutarCompraDireta (`04-procedures.sql` parte 1) - 3h - BLOQUEADOR CP1
-3. 🔴 **URGENTE P1**: Criar sp_MatchingEngine (`04-procedures.sql` parte 2) - 3h - BLOQUEADOR CP1
-4. 🔴 **URGENTE P1**: Criar triggers (`05-triggers.sql`) - 3h - BLOQUEADOR CP1
-5. 🟠 **IMPORTANTE P1**: Criar seed inicial (`06-seed-mini.sql`) - 2h
-6. 🟠 **IMPORTANTE P1**: Docker Compose (Semana 2) - 2h
-7. 🟡 **MÉDIO P1**: Testes locais e Postman Collection (Semana 2) - 6h
-8. 🟢 **BAIXO P2**: Seed massivo (Semana 3) - 5h
-
----
-
-## 🎯 RESUMO DO QUE FALTA
-
-### ✅ **API Spring Boot - 85% COMPLETA**
-- ✅ Todas as 6 Entities implementadas
-- ✅ Todos os 6 Repositories com queries customizadas
-- ✅ Todos os 4 Services (Auth, Meter, Market, Admin)
-- ✅ Todos os 4 Controllers com endpoints completos
-- ✅ Segurança completa (JWT + BCrypt 12)
-- ✅ GlobalExceptionHandler funcional
-- ✅ 7 DTOs com validações
-- ❌ Falta (P1): sp_MatchingEngine, triggers, seed-mini, docker-compose, testes
-
-### ⚠️ **Base de Dados - 35% COMPLETA**
-- ✅ Schema completo (6 tabelas com constraints)
-- ✅ Partições criadas (24 partições mensais)
-- ❌ **CRÍTICO (P2)**: Falta sp_ExecutarCompraDireta (ACID)
-- ❌ **CRÍTICO (P1)**: Falta sp_MatchingEngine (ACID)
-- ❌ **CRÍTICO (P1)**: Falta trg_DetectarAnomalias
-- ❌ Falta trg_ProtegerUtilizadores
-- ❌ Falta índices (GIN, B-tree, parciais)
-- ❌ Falta seeding massivo (500k+ leituras)
-
----
-
-## 👥 Divisão de Trabalho
-
-### Pessoa 1 - API Spring Boot + Triggers/Seed
-- ✅ Entities, Repositories, Services (COMPLETO)
-- ✅ Controllers e DTOs (COMPLETO)
-- ✅ Segurança (JWT + BCrypt) (COMPLETO)
-- Stored Procedure: sp_MatchingEngine (Semana 1)
-- Triggers: trg_DetectarAnomalias + trg_ProtegerUtilizadores (Semana 1)
-- Seed inicial (06-seed-mini.sql) (Semana 1)
-- Docker Compose + Testes (Semana 2)
-- Postman Collection (Semana 2)
-- application-prod.properties (Semana 3)
-- Deploy em cloud (Semana 4)
-
-### Pessoa 2 - Base de Dados PostgreSQL
-- ✅ Schema das tabelas (COMPLETO)
-- ✅ Partições (COMPLETO)
-- Índices de performance (03-indexes.sql) (Semana 1)
-- Stored Procedure: sp_ExecutarCompraDireta (Semana 1)
-- Seeding massivo (07-seed-massivo.sql) (Semana 3)
-- Validações e otimizações EXPLAIN ANALYZE (Semana 3)
+```
+voltexchange/
+├── .env                          ✅ variáveis de ambiente (gitignored)
+├── docker-compose.yml            ✅ 100% env-var driven
+├── docker-compose.yml.example    ✅ template para novos devs
+├── VoltExchange.postman_collection.json  ✅ existe
+├── README.md                     ⚠️ desatualizado (diz Spring Boot)
+├── api/
+│   ├── Dockerfile                ✅ Node 20 Alpine
+│   ├── package.json              ✅ express, pg, bcryptjs, jsonwebtoken, dotenv
+│   └── src/
+│       ├── app.js                ✅ Express app completa
+│       ├── config/database.js    ✅ pg Pool
+│       ├── middleware/auth.js    ✅ JWT middleware
+│       ├── routes/
+│       │   ├── auth.js           ✅ register + login
+│       │   ├── meters.js         ✅ contadores + leituras
+│       │   ├── market.js         ✅ ofertas + ordens + match
+│       │   └── admin.js          ✅ anomalias + transações
+│       └── migrations/
+│           ├── 01-schema.sql     ✅
+│           ├── 02-partitions.sql ✅
+│           ├── 03-indexes.sql    ✅ 22 índices
+│           ├── 04-procedures.sql ✅ 2 stored procedures
+│           ├── 05-triggers.sql   ✅ 4 triggers (incl. auto-matching)
+│           ├── 06-seed-mini.sql  ✅ ~100 registos
+│           ├── 07-seed-massivo.sql ✅ 500.000+ leituras
+│           └── 08-views.sql      ✅ 5 vistas
+└── .github/
+    ├── PROGRESSO.md              ✅ (este ficheiro)
+    ├── plano-4-semanas.md        ✅
+    └── voltexchange-analise.md   ✅
+```

@@ -1,3 +1,6 @@
+\echo ''
+\echo '>>> 03-indexes.sql: a criar indices...'
+
 -- Utilizadores
 
 -- Email já tem UNIQUE constraint (index implícito), sem necessidade de criar
@@ -114,3 +117,6 @@ CREATE INDEX idx_transacoes_data
 -- Índice em tipo_transacao (DIRETA / MATCHED) para filtros analíticos
 CREATE INDEX idx_transacoes_tipo
     ON Transacoes (tipo_transacao);
+
+\echo '>>> 03-indexes.sql: CONCLUIDO'
+\echo ''

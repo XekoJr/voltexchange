@@ -1,3 +1,6 @@
+\echo ''
+\echo '>>> 06-seed-mini.sql: a inserir dados de teste...'
+
 -- =============================================================================
 -- VoltExchange — 06-seed-mini.sql
 -- Dados de teste (~100 registos) para desenvolvimento e CP1
@@ -194,3 +197,6 @@ INSERT INTO OrdensCompra (comprador_id, quantidade_kwh, preco_maximo, estado, re
 -- Reactivar triggers de auto-matching
 ALTER TABLE OfertasVenda ENABLE TRIGGER trg_AutoMatching_Oferta;
 ALTER TABLE OrdensCompra ENABLE TRIGGER trg_AutoMatching_Ordem;
+
+\echo '>>> 06-seed-mini.sql: CONCLUIDO — 10 utilizadores, 10 contadores, 50 leituras, 20 ofertas, 10 ordens'
+\echo ''

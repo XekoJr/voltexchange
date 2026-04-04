@@ -1,435 +1,220 @@
-# 📅 Plano Atualizado — VoltExchange (Restantes 3.5 Semanas)
+﻿# 📅 Plano Actualizado — VoltExchange
 
-> **Projeto**: BD II — Sistema de Mercado de Energia P2P  
-> **Progresso Atual**: 58% | **Status**: 🟢 Fase 2 em andamento  
-> **Checkpoints**: CP1 → 8/Abril · CP2 → 13/Maio  
-> **Data Atual**: 14 Março 2026
-
----
-
-## ✅ O QUE JÁ ESTÁ FEITO
-
-### Base de Dados (35%)
-- ✅ Projeto Spring Boot criado e estruturado (Gradle)
-- ✅ Todas as 6 tabelas criadas em `01-schema.sql`
-- ✅ **24 partições criadas em `02-partitions.sql` (2025-2026)**
-- ✅ Constraints, Foreign Keys e CHECKs implementados
-
-### API Spring Boot (85%) ✨ QUASE COMPLETA!
-- ✅ **Todas as 6 Entities completas** (Utilizador, Contador, Leitura, OfertaVenda, OrdemCompra, Transacao)
-- ✅ **Todos os 6 Repositories com queries customizadas**
-- ✅ **Todos os 4 Services** (AuthService, MeterService, MarketService, AdminService)
-- ✅ **Todos os 4 Controllers** (Auth, Meter, Market, Admin)
-- ✅ **Segurança completa**: JWT + BCrypt 12 + Spring Security
-- ✅ **7 DTOs com validações** (@Valid, @NotNull, @Email, @Positive)
-- ✅ GlobalExceptionHandler implementado
-- ✅ CorsConfig configurado
-- ✅ application.properties configurado
-- ⚠️ **Falta apenas**: docker-compose.yml, application-prod.properties, testes
-
-## 🎯 FOCO DAS PRÓXIMAS SEMANAS
-
-| Semana | Prioridade | Responsável | Tempo Est. |
-|--------|-----------|-------------|------------|
-| **1** (restante) | 🔴 BD: Dividido entre ambos | **P1: 8h / P2: 6h** | 14h |
-| **2** | 🟠 API: Docker + Testes + Postman | Pessoa 1 | 8h |
-| **3** | 🟠 Integração + Seed Massivo | Pessoa 1 + Pessoa 2 | 12h |
-| **4** | 🟡 Deploy + Relatório + Defesa | Pessoa 1 + Pessoa 2 | 14h |
+> **Projeto**: BD II — Sistema de Mercado de Energia P2P
+> **Data**: 4 Abril 2026
+> **CP1**: 8 Abril 2026 (em 4 dias)
+> **CP2**: 13 Maio 2026
 
 ---
 
-## 📋 SEMANA 1 (restante) — Completar Base de Dados
+## ✅ O QUE ESTÁ FEITO (resumo)
 
-### 🔴 PRIORIDADE MÁXIMA — Divisão de Trabalho
+### Base de Dados — 100% ✅
+| Script | Conteúdo | Estado |
+|--------|----------|--------|
+| 01-schema.sql | 6 tabelas + constraints + FKs | ✅ Testado em Docker |
+| 02-partitions.sql | 24 partições mensais 2025-2026 | ✅ Testado em Docker |
+| 03-indexes.sql | 22 índices (GIN, parciais, compostos) | ✅ Testado em Docker |
+| 04-procedures.sql | sp_ExecutarCompraDireta + sp_MatchingEngine | ✅ Testado em Docker |
+| 05-triggers.sql | 4 triggers (anomalias + proteção + auto-matching) | ✅ Testado em Docker |
+| 06-seed-mini.sql | 10 utilizadores, 50 leituras, 20 ofertas, 10 ordens | ✅ Testado em Docker |
+| 07-seed-massivo.sql | 500.000 leituras + 1.000 ofertas + 500 ordens | ✅ Testado em Docker |
+| 08-views.sql | 5 vistas (anomalias, mercado, transações, consumo, resumo) | ✅ Testado em Docker |
 
-#### 👤 Pessoa 2 — Base de Dados Core (6h)
+### API Express.js — 100% ✅
+> A API foi completamente reescrita em **Node.js (Express)** — Spring Boot abandonado.
 
-##### 1. Índices de Performance ⚠️ CRÍTICO
-```bash
-Criar: migrations/03-indexes.sql
-```
-- [ ] Índice GIN em `Leituras.dados_audit`
-- [ ] Índices compostos para matching engine
-- [ ] Índices parciais (WHERE estado='ATIVA', WHERE estado='PENDENTE')
-- [ ] Índices em todas as Foreign Keys
-- [ ] Executar EXPLAIN ANALYZE ANTES
-- [ ] Aplicar índices
-- [ ] Executar EXPLAIN ANALYZE DEPOIS
-- **Tempo estimado**: 3h
-
-##### 2. Stored Procedure: sp_ExecutarCompraDireta ⚠️ OBRIGATÓRIO CP1
-```bash
-Criar: migrations/04-procedures.sql (parte 1)
-```
-- [ ] Assinatura da procedure (p_oferta_id, p_comprador_id, p_quantidade)
-- [ ] SELECT ... FOR UPDATE na oferta (bloqueio pessimista)
-- [ ] Validar oferta existe e está ATIVA
-- [ ] Validar quantidade disponível
-- [ ] Validar saldo do comprador suficiente
-- [ ] UPDATE saldo comprador (débito)
-- [ ] UPDATE saldo vendedor (crédito)
-- [ ] UPDATE quantidade_kwh da oferta (ou estado para COMPLETA)
-- [ ] INSERT em Transacoes (tipo='DIRETA')
-- [ ] COMMIT ou ROLLBACK com tratamento de exceções
-- [ ] Testar com dados mock
-- [ ] Documentar exceções (saldo insuficiente, oferta inativa)
-- **Tempo estimado**: 3h
+- ✅ 13 endpoints funcionais (auth, meters, market, admin, health)
+- ✅ JWT Bearer + bcryptjs strength 12
+- ✅ Parameterized queries (anti-SQL injection)
+- ✅ Docker build funcional (`docker compose up --build`)
+- ✅ `.env` único para toda a configuração
 
 ---
 
-#### 👤 Pessoa 1 — Procedures + Triggers + Seed (8h)
+## 🔴 PRIORIDADE MÁXIMA — CP1 em 4 dias (8 Abril)
 
-##### 3. Stored Procedure: sp_MatchingEngine ⚠️ OBRIGATÓRIO CP1
-```bash
-Criar/Completar: migrations/04-procedures.sql (parte 2)
+### Tarefa 1 — Executar no Servidor da Escola ⚠️ BLOQUEADOR
 ```
-- [ ] Loop por OrdensCompra com estado='PENDENTE' ORDER BY data_criacao
-- [ ] Para cada ordem buscar ofertas compatíveis:
-  - [ ] Preço oferta <= preço máximo ordem
-  - [ ] Região compatível (ou NULL em ambos)
-  - [ ] Estado='ATIVA'
-  - [ ] ORDER BY preco_unitario ASC, data_criacao ASC (FIFO)
-- [ ] SELECT ... FOR UPDATE na oferta escolhida
-- [ ] Calcular quantidade a transferir (MIN entre ordem e oferta)
-- [ ] UPDATE saldos (débito comprador, crédito vendedor)
-- [ ] UPDATE quantidades (ordem e oferta)
-- [ ] UPDATE estados (PARCIAL ou COMPLETA)
-- [ ] INSERT em Transacoes (tipo='MATCHED')
-- [ ] Logging com RAISE NOTICE
-- [ ] Tratamento de exceções
-- [ ] Testar com múltiplas ordens e ofertas
-- **Tempo estimado**: 3h
-
-##### 4. Triggers ⚠️ OBRIGATÓRIO CP1
-```bash
-Criar: migrations/05-triggers.sql
+Hoje / amanhã (5-6 Abril)
 ```
-- [ ] **trg_DetectarAnomalias** (AFTER INSERT ON Leituras)
-  - [ ] Função fn_DetectarAnomalias()
-  - [ ] Extrair temperatura do JSONB: (NEW.dados_audit->>'temperatura')::numeric
-  - [ ] Verificar se temperatura > 80 OU dados_audit ? 'erro_codigo'
-  - [ ] UPDATE Contadores SET estado='MANUTENCAO' WHERE contador_id = NEW.contador_id
-  - [ ] RAISE NOTICE com detalhes da anomalia
-- [ ] **trg_ProtegerUtilizadores** (BEFORE DELETE ON Utilizadores)
-  - [ ] Função fn_ProtegerUtilizadores()
-  - [ ] Verificar se OLD.saldo > 0
-  - [ ] Verificar se existem transações nos últimos 30 dias
-  - [ ] RAISE EXCEPTION se houver impedimentos
-- [ ] Testar com casos reais (leitura anómala, tentar deletar utilizador ativo)
-- **Tempo estimado**: 3h
-
-##### 5. Seed Inicial
-```bash
-Criar: migrations/06-seed-mini.sql
-```
-- [ ] 10 utilizadores (saldos variados: 0, 50, 100, 200)
-- [ ] 10 contadores (distribuídos pelos utilizadores, regiões Norte/Centro/Sul)
-- [ ] 50 leituras:
-  - [ ] 40 normais (temperatura 20-60, sem erro_codigo)
-  - [ ] 10 anómalas (5 com temperatura > 80, 5 com erro_codigo)
-- [ ] 20 ofertas de venda (preços 0.10-0.18, regiões variadas)
-- [ ] 10 ordens de compra (preços máximos 0.12-0.20, algumas compatíveis)
-- [ ] Comentários indicando dados para testes específicos
+1. Obter credenciais do servidor PostgreSQL da escola (se ainda não tens)
+2. Executar os scripts **em ordem**:
+   ```bash
+   psql -h HOST -U USER -d voltexchange -f 01-schema.sql
+   psql -h HOST -U USER -d voltexchange -f 02-partitions.sql
+   psql -h HOST -U USER -d voltexchange -f 03-indexes.sql
+   psql -h HOST -U USER -d voltexchange -f 04-procedures.sql
+   psql -h HOST -U USER -d voltexchange -f 05-triggers.sql
+   psql -h HOST -U USER -d voltexchange -f 06-seed-mini.sql
+   psql -h HOST -U USER -d voltexchange -f 07-seed-massivo.sql
+   psql -h HOST -U USER -d voltexchange -f 08-views.sql
+   ```
+3. Validar:
+   - [ ] `SELECT COUNT(*) FROM leituras;` → 500050
+   - [ ] `SELECT COUNT(*) FROM ofertasvenda;` → 1020
+   - [ ] `SELECT COUNT(*) FROM contadores WHERE estado='MANUTENCAO';` → 10
+   - [ ] `CALL sp_ExecutarCompraDireta(1, 1, 5.0);` → deve funcionar ou dar erro descritivo
+   - [ ] `CALL sp_MatchingEngine();` → deve processar matches
 - **Tempo estimado**: 2h
 
-### 📝 Entregáveis da Semana 1
-**Pessoa 2:**
-- `03-indexes.sql` ✅
-- `04-procedures.sql` (sp_ExecutarCompraDireta) ✅
-- Documento com assinatura e exemplo de uso da procedure
-
-**Pessoa 1:**
-- `04-procedures.sql` (sp_MatchingEngine) ✅
-- `05-triggers.sql` ✅
-- `06-seed-mini.sql` ✅
-- Documento com assinatura e exemplo de uso do matching engine
-
-### 🤝 Coordenação
-- **Sexta tarde**: Pessoa 2 partilha 04-procedures.sql (parte 1) para Pessoa 1 adicionar parte 2
-- **Sábado**: Ambos testam procedures em conjunto
-- **Domingo**: Validação completa com seed-mini
-
----
-
----
-
-## 📋 SEMANA 2 — Docker + Testes + Validação
-
-> ⚠️ **Checkpoint 1 (8/Abril)**: Tabelas criadas no servidor da escola + Procedures funcionais + API testada localmente
-
-### 🟢 API JÁ COMPLETA - Apenas Testes e Docker (Pessoa 1)
-
-ℹ️ **NOTA**: A API já está 85% implementada! Entities, Repositories, Services, Controllers e Security estão TODOS completos.
-
-#### 1. Docker Compose ⚠️ PRIORITÁRIO
-- [ ] `docker-compose.yml` com PostgreSQL
-- [ ] Configuração de volumes para persistência
-- [ ] pgAdmin/Adminer opcional
-- [ ] Testar `docker-compose up`
-- [ ] Validar conexão da API
-- **Tempo estimado**: 2h
-
-#### 2. Testes Locais Completos
-- [ ] Testar registo de utilizador (POST /api/auth/register)
-- [ ] Testar login e receber JWT (POST /api/auth/login)
-- [ ] Testar inserção de leitura com token (POST /api/meters/{id}/readings)
-- [ ] Testar listagem de leituras (GET /api/meters/{id}/readings?inicio=...&fim=...)
-- [ ] Testar criação de oferta (POST /api/market/offers)
-- [ ] Testar compra direta (POST /api/market/offers/{id}/buy) → REQUER procedures!
-- [ ] Testar matching engine (POST /api/market/match) → REQUER procedures!
-- [ ] Testar anomalias (GET /api/admin/anomalies)
-- **Tempo estimado**: 4h
-
-#### 3. Postman Collection 📋
-- [ ] Criar collection com todos os endpoints
-- [ ] Adicionar exemplos de request/response
-- [ ] Script de auto-save do token JWT
-- [ ] Exportar como JSON
-- **Tempo estimado**: 2h
-
-### ✅ Validação Semana 2
-- [ ] Docker Compose funcional
-- [ ] Consegue registar utilizador
-- [ ] Consegue fazer login e receber JWT
-- [ ] Consegue inserir leitura com token
-- [ ] Consegue listar leituras de um contador
-- [ ] Triggers funcionam (anomalias detectadas)
-- [ ] Postman Collection exportada
-
-### 🎯 Checkpoint 1 - Preparação (Fim Semana 2)
-- [ ] Executar DDL + partitions + indexes + procedures + triggers no servidor da escola
-- [ ] Carregar seed inicial no servidor
-- [ ] API local funcional com Auth + Leituras
-- [ ] Demonstração: registo → login → inserir leitura → detectar anomalia
-
----
-
-## 📋 SEMANA 3 — Integração & Seed Massivo
-
-### 🟢 API JÁ INTEGRADA - Apenas Testes End-to-End (Pessoa 1 + Pessoa 2)
-
-ℹ️ **NOTA**: Os endpoints de mercado JÁ estão implementados! MarketService e MarketController completos com SimpleJdbcCall.
-
-#### Pessoa 1 - Testes de Integração Completos
-- [ ] Testar fluxo completo: registo → login → criar oferta → comprar → verificar saldo
-- [ ] Testar matching engine processa ordens corretamente
-- [ ] Validar saldos após transações (débito/crédito corretos)
-- [ ] Validar estados das ofertas/ordens (ATIVA → PARCIAL → COMPLETA)
-- [ ] Testar casos de erro (saldo insuficiente, oferta inativa)
-- [ ] Query de anomalias retorna contadores em manutenção
-- [ ] Procedures chamadas com sucesso via API
-- **Tempo estimado**: 5h
-
-#### Pessoa 2 - Seeding Massivo ⚠️ OBRIGATÓRIO CP1
-```bash
-Criar: migrations/07-seed-massivo.sql
+### Tarefa 2 — Testar API Local Completa (Postman) ⚠️ BLOQUEADOR
 ```
-- [ ] 500.000+ leituras com `generate_series`
-- [ ] 1.000+ ofertas de venda
-- [ ] Distribuição realista por regiões (Norte, Centro, Sul)
-- [ ] Dados variados (datas entre 2025-2026, preços 0.08-0.20, estados)
-- [ ] Leituras normais (80%) e anómalas (20%)
-- [ ] Executar no servidor da escola
-- [ ] Validar integridade referencial
-- [ ] Medir tempo de inserção
-- **Tempo estimado**: 5h
+6-7 Abril
+```
+Fluxo obrigatório a demonstrar no CP1:
+1. [ ] `POST /api/auth/register` → receber JWT
+2. [ ] `POST /api/auth/login` → receber JWT
+3. [ ] `GET /api/meters` → listar contadores
+4. [ ] `POST /api/meters/:id/readings` → submeter leitura (normal + anómala)
+5. [ ] `GET /api/meters/:id/readings?inicio=2025-01-01&fim=2025-12-31` → leituras do período
+6. [ ] `GET /api/market/offers` → listar ofertas
+7. [ ] `POST /api/market/offers` → criar oferta
+8. [ ] `POST /api/market/offers/:id/buy` → compra direta
+9. [ ] `POST /api/market/order` → criar ordem
+10. [ ] `POST /api/market/match` → matching engine
+11. [ ] `GET /api/admin/anomalies` → ver anomalias e contadores em MANUTENCAO
+12. [ ] `GET /api/admin/transactions` → ver histórico
+- **Tempo estimado**: 3h
 
-#### Pessoa 1 - application-prod.properties
-- [ ] Configurar URL do servidor da escola
-- [ ] Configurar credenciais (via variáveis de ambiente)
-- [ ] Configurar logging para produção
-- [ ] JWT secret forte (variável de ambiente)
+### Tarefa 3 — Postman Collection Documentada
+```
+7 Abril
+```
+A collection `VoltExchange.postman_collection.json` já existe — garantir que tem:
+- [ ] Pre-request script que guarda o JWT automaticamente em variável de ambiente
+- [ ] Exemplos de request e response em cada endpoint
+- [ ] Pelo menos 1 caso de erro documentado por endpoint (ex: 401, 400)
+- **Tempo estimado**: 2h
+
+---
+
+## 🟠 SEMANA 2-3 (9-27 Abril) — Deploy + Testes de Segurança
+
+### Tarefa 4 — Deploy Cloud ⚠️ OBRIGATÓRIO CP2
+Plataformas recomendadas (gratuitas):
+- **Railway** (mais simples, suporta Node.js directamente)
+- **Render** (alternativa)
+
+Passos:
+- [ ] Criar conta Railway / Render
+- [ ] Conectar repositório GitHub
+- [ ] Configurar variáveis de ambiente (PORT, DB_HOST apontando para escola, DB_*, JWT_SECRET)
+- [ ] Fazer deploy
+- [ ] Testar todos os endpoints em produção
+- **Tempo estimado**: 3h
+
+### Tarefa 5 — Testes de Segurança Documentados
+- [ ] SQL Injection: tentar `email = "' OR 1=1 --"` → deve retornar 400/401
+- [ ] Acesso sem token → deve retornar 401
+- [ ] Token expirado → deve retornar 401
+- [ ] Token de outro utilizador a aceder ao contador alguém → deve retornar 403
+- [ ] Confirmar BCrypt: `SELECT password_hash FROM utilizadores LIMIT 1;` → deve começar com `$2b$12$`
+- [ ] Documentar com prints / curl output
+- **Tempo estimado**: 2h
+
+### Tarefa 6 — EXPLAIN ANALYZE
+Importante para o relatório:
+- [ ] Antes dos índices: simular com `SET enable_indexscan = off;`
+- [ ] Query de anomalias JSONB (GIN index)
+- [ ] Query de leituras por período com e sem partition pruning
+- [ ] Query do matching engine (composite indexes)
+- [ ] Exportar resultados e incluir no relatório
+- **Tempo estimado**: 2h
+
+### Tarefa 7 — README.md Actualizado
+O `README.md` actual diz "Spring Boot" e "22% progresso" — está completamente desatualizado:
+- [ ] Reescrever com arquitectura actual (Node.js + Express)
+- [ ] Instruções `docker compose up --build`
+- [ ] Lista de endpoints
+- [ ] Credenciais de teste (alice@voltexchange.com / senha123)
 - **Tempo estimado**: 1h
 
-#### Pessoa 2 - Validações e Otimizações
-- [ ] Validar performance com 500k+ leituras
-- [ ] EXPLAIN ANALYZE nas queries críticas
-- [ ] Documentar ganhos de performance dos índices
-- [ ] Ajustar índices se necessário
-- **Tempo estimado**: 1h
-
-### ✅ Validação Semana 3
-- [ ] 500.000+ leituras carregadas no servidor da escola
-- [ ] Fluxo completo end-to-end funcional
-- [ ] Matching engine processa múltiplas ordens corretamente
-- [ ] Performance aceitável (queries < 1s)
-- [ ] application-prod.properties configurado
-
 ---
 
-## 📋 SEMANA 4 — Deploy, Seeding Massivo & Entrega Final
+## 🟡 SEMANA 4 (28 Abril – 13 Maio) — Relatório + Defesa
 
-> ⚠️ **Checkpoint 2 (13/Maio)**: API online + Seeding massivo completo + Relatório + Defesa
-
-### 🟡 FINALIZAÇÃO (Pessoa 1 + Pessoa 2)
-
-#### Pessoa 2 - Seeding Massivo ⚠️ OBRIGATÓRIO CP2
-```bash
-Criar: migrations/07-seed-massivo.sql
-```
-- [ ] 500.000+ leituras com `generate_series`
-- [ ] 1.000+ ofertas de venda
-- [ ] Distribuição realista por regiões
-- [ ] Dados variados (datas, preços, estados)
-- [ ] Executar no servidor da escola
-- [ ] Validar integridade referencial
-- **Tempo estimado**: 4h
-
-#### Pessoa 1 - Deploy em Cloud ⚠️ OBRIGATÓRIO CP2
-- [ ] Escolher plataforma (Railway/Render)
-- [ ] Configurar variáveis de ambiente
-- [ ] `application-prod.properties` configurado
-- [ ] Deploy realizado
-- [ ] Conexão com servidor da escola testada
-- [ ] Todos os endpoints testados em produção
-- **Tempo estimado**: 3h
-
-#### Pessoa 1 - Testes de Segurança ⚠️ OBRIGATÓRIO
-- [ ] Tentar SQL Injection em todos os campos → deve falhar
-- [ ] Testar acesso sem token → deve retornar 401
-- [ ] Testar token expirado → deve retornar 401
-- [ ] Confirmar BCrypt ≥ 12
-- [ ] Documentar testes com prints
+### Tarefa 8 — Diagrama ER
+- [ ] Desenhar em Draw.io ou Lucidchart
+- [ ] Todas as 6 tabelas, PKs, FKs, cardinalidades
+- [ ] Exportar como PNG para o relatório
 - **Tempo estimado**: 2h
 
-#### Pessoa 1 + Pessoa 2 - Documentação ⚠️ OBRIGATÓRIO CP2
-
-**Postman Collection**
-- [ ] Criar collection com exemplos de todos os endpoints
-- [ ] Adicionar exemplos de requests/responses
-- [ ] Exportar como JSON
-- **Tempo estimado**: 2h
-
-**Relatório Técnico (PDF)**
-- [ ] Diagrama ER profissional (Draw.io/Lucidchart)
-- [ ] Descrição de todas as tabelas
-- [ ] Justificação de cada índice (tipo e propósito)
-- [ ] Resultados EXPLAIN ANALYZE (antes/depois)
-- [ ] Descrição do particionamento (porquê e impacto)
-- [ ] Descrição das procedures (lógica + fluxo)
-- [ ] Descrição dos triggers (lógica + fluxo)
-- [ ] Plano de execução do matching engine
-- [ ] Screenshots dos testes de segurança
-- [ ] Screenshots da aplicação funcionando
+### Tarefa 9 — Relatório Técnico PDF ⚠️ OBRIGATÓRIO CP2
+Estrutura sugerida:
+1. Introdução e objectivos
+2. Arquitectura do sistema (diagrama)
+3. Modelo de dados (ER + descrição das tabelas)
+4. Particionamento: justificação + impacto de performance
+5. Índices: cada índice com tipo, propósito e resultado EXPLAIN ANALYZE
+6. Stored Procedures: lógica + fluxo de execução
+7. Triggers: lógica + casos de teste
+8. API REST: endpoints, segurança (JWT + BCrypt), anti-injection
+9. Critérios de excelência: auto-matching, views, seed massivo
+10. Conclusões
 - **Tempo estimado**: 6h
 
-**Scripts SQL Finais**
-- [ ] Organizar todos os scripts na pasta `migrations/`
-- [ ] Validar ordem de execução
-- [ ] Testar sequência completa em BD limpa
-- [ ] Adicionar comentários onde necessário
-- **Tempo estimado**: 2h
-
-#### Pessoa 1 + Pessoa 2 - Preparação da Defesa
-- [ ] Ambos conseguem explicar estrutura da BD
-- [ ] Ambos conseguem explicar procedures/triggers
-- [ ] Ambos conseguem explicar arquitectura da API
-- [ ] Ambos conseguem explicar segurança implementada
-- [ ] Demo ao vivo preparada
-- [ ] Respostas a perguntas técnicas preparadas
+### Tarefa 10 — Preparação da Defesa
+- [ ] Ambos conseguem explicar cada tabela e porquê as choices de design
+- [ ] Ambos conseguem explicar as stored procedures linha a linha
+- [ ] Ambos conseguem explicar o particionamento e partition pruning
+- [ ] Ambos conseguem executar uma demo ao vivo (Postman + psql)
+- [ ] Perguntas difíceis preparadas: "Porquê Express em vez de Spring Boot?", "O que acontece a um INSERT fora das partições?"
 - **Tempo estimado**: 3h
 
-### 🎯 Checkpoint 2 - Entrega Final (13 Maio)
+---
 
-#### Organização do ZIP
-```
-voltexchange-entrega.zip
-├── api/                        
-│   ├── src/                    (código Spring Boot)
-│   ├── build.gradle
-│   └── README.md
-├── migrations/
-│   ├── 01-schema.sql
-│   ├── 02-partitions.sql
-│   ├── 03-indexes.sql
-│   ├── 04-procedures.sql
-│   ├── 05-triggers.sql
-│   ├── 06-seed-mini.sql
-│   └── 07-seed-massivo.sql
-├── docs/
-│   ├── relatorio-tecnico.pdf
-│   ├── diagrama-er.png
-│   └── VoltExchange.postman_collection.json
-├── README.md
-└── .gitignore
-```
+## 📊 Resumo de Tempos
 
-#### Checklist Final
-- [ ] Código limpo (sem node_modules, target/, .class)
-- [ ] .gitignore configurado
-- [ ] README.md completo com instruções
-- [ ] Todos os scripts testados
-- [ ] API deployed e online
-- [ ] Postman collection testada
-- [ ] Relatório completo
-- [ ] Defesa preparada
+| Tarefa | Quando | Tempo Est. | Estado |
+|--------|--------|------------|--------|
+| 1 — Servidor da escola | 5-6 Abril | 2h | ❌ |
+| 2 — Testes Postman CP1 | 6-7 Abril | 3h | ❌ |
+| 3 — Postman collection documentada | 7 Abril | 2h | ⚠️ Parcial |
+| 4 — Deploy Cloud | 9-15 Abril | 3h | ❌ |
+| 5 — Testes de Segurança | 15-20 Abril | 2h | ❌ |
+| 6 — EXPLAIN ANALYZE | 15-20 Abril | 2h | ❌ |
+| 7 — README.md | 20 Abril | 1h | ❌ |
+| 8 — Diagrama ER | 28+ Abril | 2h | ❌ |
+| 9 — Relatório PDF | 1-10 Maio | 6h | ❌ |
+| 10 — Defesa | 10-13 Maio | 3h | ❌ |
+| **TOTAL** | | **26h** | |
 
 ---
 
-## 🏆 CRITÉRIOS DE EXCELÊNCIA (Bonus)
+## 🏆 Critérios de Excelência — JÁ IMPLEMENTADOS ✅
 
-Se houver tempo extra, implementar:
+Os seguintes bónus já estão feitos e devem ser **destacados no relatório e na defesa**:
 
-- [ ] **Trigger de Auto-Matching**: AFTER INSERT em OrdensCompra e OfertasVenda
-- [ ] **Views úteis**: vw_OfertasAtivas, vw_TransacoesRecentes
-- [ ] **Logs estruturados**: na API com níveis apropriados
-- [ ] **Health check endpoint**: GET /api/health
-- [ ] **Paginação**: em listagens longas
-- [ ] **Filtros avançados**: nas queries de ofertas/ordens
-- [ ] **Tratamento de edge cases**: saldo exato, quantidade parcial, etc.
-- [ ] **Testes unitários**: alguns testes básicos
-
----
-
-## 📊 RESUMO DE TEMPOS ESTIMADOS
-
-| Semana | Pessoa 1 (API + Triggers + Seed) | Pessoa 2 (BD) | Total |
-|--------|----------------------------------|---------------|-------|
-| 1 | 8h | 6h | 14h |
-| 2 | 8h | — | 8h |
-| 3 | 6h | 6h | 12h |
-| 4 | 5h | 9h | 14h |
-| **TOTAL** | **27h** | **21h** | **48h** |
-
-**Por pessoa**: Pessoa 1: 27h · Pessoa 2: 21h (média ~24h, ~6h/semana)
-
-ℹ️ **NOTA**: Tempo reduzido face à estimativa inicial porque **85% da API já está implementada**!
-
-**Divisão Semana 1:**
-- **Pessoa 1**: sp_MatchingEngine (3h) + Triggers (3h) + Seed (2h) = 8h
-- **Pessoa 2**: Índices (3h) + sp_ExecutarCompraDireta (3h) = 6h
+- ✅ **Trigger de Auto-Matching** — `trg_AutoMatching_Ordem` e `trg_AutoMatching_Oferta` disparam `sp_MatchingEngine` automaticamente a cada novo INSERT
+- ✅ **5 Views** — `vw_anomalias_detalhadas`, `vw_mercado_ativo`, `vw_transacoes_detalhadas`, `vw_consumo_mensal`, `vw_resumo_utilizadores`
+- ✅ **Seed Massivo real** — 500.000 leituras com distribuição realista (80%/15%/5%)
+- ✅ **Health check endpoint** — `GET /api/health`
+- ✅ **Índices GIN em JSONB** — `idx_leituras_dados_audit_gin`
+- ✅ **Índices parciais** — `idx_ofertas_regiao_ativa`, `idx_ordens_regiao_pendente`, `idx_utilizadores_saldo`
+- ✅ **\echo logging nas migrações** — visibilidade de quais scripts correram
+- ✅ **docker-compose.yml sem credenciais hardcoded** — 100% baseado em .env
 
 ---
 
-## 🚨 ALERTAS E LEMBRETES
+## 🎯 Checklist CP1 (8 Abril)
 
-### ⚠️ CRÍTICO - Não esquecer:
-1. ~~**Partições** da tabela Leituras~~ ✅ FEITO!
-2. ~~**Entities, Repositories, Services, Controllers**~~ ✅ FEITO!
-3. ~~**JWT + BCrypt 12**~~ ✅ FEITO!
-4. **Índice GIN** no JSONB (obrigatório no relatório) ❌ FALTA
-5. **Procedures** funcionais (obrigatório CP1) ❌ FALTA
-6. **Triggers** funcionais (obrigatório CP1) ❌ FALTA
-7. **500k leituras** no servidor da escola (obrigatório CP2) ❌ FALTA
+- [ ] Servidor da escola: scripts executados
+- [ ] Servidor da escola: 500.000+ leituras confirmadas
+- [x] API funcional localmente
+- [x] Auth endpoint funcional (JWT)
+- [x] Stored procedures funcionais
+- [x] Triggers funcionais
+- [ ] Postman collection com fluxo completo testado
+- [ ] Demo preparada (5 min): registo → login → leitura → anomalia → matching
 
-### 💡 DICAS:
-- Fazer commits frequentes
-- Testar cada componente isoladamente antes de integrar
-- Usar seed-mini para desenvolvimento, seed-massivo só no final
-- Documentar à medida que desenvolve (não deixar para o fim)
-- Ambas as pessoas devem entender TODO o projeto (não apenas "a sua parte")
+## 🎯 Checklist CP2 (13 Maio)
 
----
-
-## 📞 SINCRONIZAÇÕES SEMANAIS
-
-| Dia | Objetivo |
-|-----|----------|
-| **Sexta S1** | Pessoa 2 entrega scripts SQL à Pessoa 1 |
-| **Domingo S2** | Validar CP1 no servidor da escola |
-| **Sexta S3** | Testes integração completos |
-| **Terça S4** | Revisão final antes da entrega |
-
----
-
-**Boa sorte! 🚀⚡**
+- [ ] API deployed em cloud
+- [ ] Todos os endpoints funcionais em produção
+- [ ] Testes de segurança documentados
+- [ ] Relatório técnico PDF completo
+- [ ] Diagrama ER incluído
+- [ ] EXPLAIN ANALYZE documentado
+- [ ] Postman collection documentada e exportada
+- [ ] Defesa preparada (ambos os elementos)

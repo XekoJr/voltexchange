@@ -1,3 +1,6 @@
+\echo ''
+\echo '>>> 07-seed-massivo.sql: a inserir 500 000+ registos (pode demorar)...'
+
 -- =============================================================================
 -- VoltExchange — 07-seed-massivo.sql
 -- Seed massivo para testes de performance e demonstração do CP1/CP2
@@ -196,3 +199,6 @@ BEGIN
     RAISE NOTICE 'Contadores em MANUTENCAO: %', v_manutencao;
 END;
 $$;
+
+\echo '>>> 07-seed-massivo.sql: CONCLUIDO'
+\echo ''

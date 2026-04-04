@@ -1,3 +1,6 @@
+\echo ''
+\echo '>>> 02-partitions.sql: a criar particoes...'
+
 -- PARTITIONS 2025
 CREATE TABLE Leituras_2025_01 PARTITION OF Leituras
     FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
@@ -72,3 +75,6 @@ CREATE TABLE Leituras_2026_11 PARTITION OF Leituras
 
 CREATE TABLE Leituras_2026_12 PARTITION OF Leituras
     FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
+
+\echo '>>> 02-partitions.sql: CONCLUIDO — 24 particoes criadas (2025-01 a 2026-12)'
+\echo ''
