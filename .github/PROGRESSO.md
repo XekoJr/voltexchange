@@ -1,7 +1,7 @@
 # 📊 Progresso do Projeto VoltExchange
 
-> **Última atualização**: 14 Março 2026  
-> **Status Geral**: 🟡 Em Desenvolvimento - Fase 1 (Setup & Fundações)
+> **Última atualização**: 4 Abril 2026  
+> **Status Geral**: 🟡 Em Desenvolvimento - Fase 2 (API Express.js + BD)
 
 ---
 

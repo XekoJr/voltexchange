@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "VoltExchange API",
-    "description": "Coleção completa de endpoints para testar a API VoltExchange — BD II 2025/2026",
+    "description": "Coleção completa de endpoints para testar a API VoltExchange — BD II 2025/2026\n\nBase URL: http://localhost:3000\nAutenticação: Bearer JWT (guardado automaticamente após login/register)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8080",
+      "value": "http://localhost:3000",
       "type": "string"
     },
     {
@@ -17,6 +17,24 @@
     }
   ],
   "item": [
+    {
+      "name": "🏥 Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Verifica se a API está online. Não requer autenticação."
+          }
+        }
+      ]
+    },
     {
       "name": "🔐 Auth",
       "item": [
@@ -51,7 +69,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "register"]
             },
-            "description": "Regista novo utilizador e retorna JWT token."
+            "description": "Regista novo utilizador. Retorna JWT token guardado automaticamente na variável {{token}}.\n\nResposta 201:\n```json\n{ \"token\": \"...\", \"tipo\": \"Bearer\", \"email\": \"...\", \"nome\": \"...\" }\n```"
           }
         },
         {
@@ -85,7 +103,26 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
             },
-            "description": "Autentica utilizador e retorna JWT token."
+            "description": "Autentica utilizador. Retorna JWT token guardado automaticamente na variável {{token}}.\n\nResposta 200:\n```json\n{ \"token\": \"...\", \"tipo\": \"Bearer\", \"email\": \"...\", \"nome\": \"...\" }\n```"
+          }
+        },
+        {
+          "name": "Login — Credenciais Inválidas",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao@voltexchange.com\",\n  \"password\": \"passworderrada\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Teste de segurança: credenciais inválidas devem retornar 401."
           }
         }
       ]
@@ -105,7 +142,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "meters"]
             },
-            "description": "Lista contadores do utilizador autenticado."
+            "description": "Lista contadores do utilizador autenticado.\n\nResposta 200:\n```json\n[\n  { \"contador_id\": 1, \"utilizador_id\": 1, \"numero_serie\": \"...\", \"estado\": \"ATIVO\", \"regiao\": \"Norte\" }\n]\n```"
           }
         },
         {
@@ -125,7 +162,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "meters", "1", "readings"]
             },
-            "description": "Grava leitura normal (temperatura < 80, sem erro_codigo). ContadorId vai no path."
+            "description": "Grava leitura normal (temperatura < 80, sem erro_codigo). ContadorId vai no path.\n\nResposta 201:\n```json\n{ \"mensagem\": \"Leitura registada com sucesso\", \"leituraId\": 1, \"dataHora\": \"...\", \"contadorId\": 1 }\n```"
           }
         },
         {
@@ -184,7 +221,20 @@
                 { "key": "fim", "value": "2025-12-31T23:59:59" }
               ]
             },
-            "description": "Lista leituras do contador 1 em 2025. Aproveita o particionamento."
+            "description": "Lista leituras do contador 1 em 2025. Aproveita o particionamento por data_hora."
+          }
+        },
+        {
+          "name": "Acesso Sem Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/meters",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meters"]
+            },
+            "description": "Teste de segurança: sem token deve retornar 401."
           }
         }
       ]
@@ -242,7 +292,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "market", "offers"]
             },
-            "description": "Cria nova oferta de venda de energia. Requer autenticação."
+            "description": "Cria nova oferta de venda de energia.\n\nResposta 201: registo completo da oferta criada com estado='ATIVA'."
           }
         },
         {
@@ -262,7 +312,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "market", "offers", "1", "buy"]
             },
-            "description": "Compra imediata via sp_ExecutarCompraDireta. OfertaId vai no path. ACID: bloqueia oferta, debita/credita saldos."
+            "description": "Compra imediata via sp_ExecutarCompraDireta. OfertaId vai no path.\n\nACID: bloqueia oferta (SELECT FOR UPDATE), debita/credita saldos, insere Transacao.\n\nResposta 200:\n```json\n{ \"mensagem\": \"Compra realizada com sucesso\", \"ofertaId\": 1, \"quantidade\": 10.5 }\n```"
           }
         },
         {
@@ -282,7 +332,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "market", "order"]
             },
-            "description": "Cria ordem de compra futura. Se trigger auto-matching estiver ativo, sp_MatchingEngine dispara."
+            "description": "Cria ordem de compra futura com estado='PENDENTE'.\n\nResposta 201: registo completo da ordem criada."
           }
         },
         {
@@ -302,7 +352,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "market", "order"]
             },
-            "description": "Ordem sem preferência de região — matching aceita qualquer região."
+            "description": "Ordem sem preferência de região — o matching aceita qualquer região."
           }
         },
         {
@@ -317,7 +367,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "market", "match"]
             },
-            "description": "Dispara sp_MatchingEngine manualmente. OBRIGATÓRIO para avaliação."
+            "description": "Dispara sp_MatchingEngine manualmente. OBRIGATÓRIO para avaliação.\n\nResposta 200:\n```json\n{ \"mensagem\": \"Matching engine executado com sucesso\" }\n```"
           }
         }
       ]
@@ -337,7 +387,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "admin", "anomalies"]
             },
-            "description": "Query JSONB com índice GIN: temperatura > 80 OU presença de erro_codigo."
+            "description": "Query JSONB com índice GIN: temperatura > 80 OU presença de erro_codigo.\n\nResposta 200:\n```json\n{\n  \"totalAnomalias\": 5,\n  \"contadoresEmManutencao\": 2,\n  \"leituras\": [...],\n  \"contadores\": [...]\n}\n```"
           }
         },
         {
@@ -352,7 +402,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "admin", "transactions"]
             },
-            "description": "Histórico completo de transações (diretas e matched)."
+            "description": "Histórico completo de transações (DIRETA e MATCHED).\n\nResposta 200:\n```json\n{\n  \"total\": 10,\n  \"transacoes\": [...]\n}\n```"
           }
         }
       ]

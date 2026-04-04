@@ -21,27 +21,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Spring Boot API
-  api:
-    build:
-      context: ./api
-      dockerfile: ../Dockerfile.gradle
-    container_name: voltexchange-api
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voltexchange
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      SPRING_PROFILES_ACTIVE: prod
-      JWT_SECRET: VoltExchange2026SecretKeyMuitoSegura123456789
-    ports:
-      - "8080:8080"
-    networks:
-      - voltexchange-network
-    restart: unless-stopped
-
 volumes:
   postgres-data:
 
