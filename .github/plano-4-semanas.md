@@ -19,7 +19,6 @@
 | 05-triggers.sql | 4 triggers (anomalias + proteção + auto-matching) | ✅ Testado em Docker |
 | 06-seed-mini.sql | 10 utilizadores, 50 leituras, 20 ofertas, 10 ordens | ✅ Testado em Docker |
 | 07-seed-massivo.sql | 500.000 leituras + 1.000 ofertas + 500 ordens | ✅ Testado em Docker |
-| 08-views.sql | 5 vistas (anomalias, mercado, transações, consumo, resumo) | ✅ Testado em Docker |
 
 ### API Express.js — 100% ✅
 > A API foi completamente reescrita em **Node.js (Express)** — Spring Boot abandonado.
@@ -48,7 +47,6 @@ Hoje / amanhã (5-6 Abril)
    psql -h HOST -U USER -d voltexchange -f 05-triggers.sql
    psql -h HOST -U USER -d voltexchange -f 06-seed-mini.sql
    psql -h HOST -U USER -d voltexchange -f 07-seed-massivo.sql
-   psql -h HOST -U USER -d voltexchange -f 08-views.sql
    ```
 3. Validar:
    - [ ] `SELECT COUNT(*) FROM leituras;` → 500050
@@ -150,7 +148,7 @@ Estrutura sugerida:
 6. Stored Procedures: lógica + fluxo de execução
 7. Triggers: lógica + casos de teste
 8. API REST: endpoints, segurança (JWT + BCrypt), anti-injection
-9. Critérios de excelência: auto-matching, views, seed massivo
+9. Critérios de excelência: auto-matching, seed massivo
 10. Conclusões
 - **Tempo estimado**: 6h
 
@@ -187,7 +185,6 @@ Estrutura sugerida:
 Os seguintes bónus já estão feitos e devem ser **destacados no relatório e na defesa**:
 
 - ✅ **Trigger de Auto-Matching** — `trg_AutoMatching_Ordem` e `trg_AutoMatching_Oferta` disparam `sp_MatchingEngine` automaticamente a cada novo INSERT
-- ✅ **5 Views** — `vw_anomalias_detalhadas`, `vw_mercado_ativo`, `vw_transacoes_detalhadas`, `vw_consumo_mensal`, `vw_resumo_utilizadores`
 - ✅ **Seed Massivo real** — 500.000 leituras com distribuição realista (80%/15%/5%)
 - ✅ **Health check endpoint** — `GET /api/health`
 - ✅ **Índices GIN em JSONB** — `idx_leituras_dados_audit_gin`

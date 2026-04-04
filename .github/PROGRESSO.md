@@ -102,13 +102,6 @@
 - [x] UPDATE manual de anomalias (trigger desactivado durante carga)
 - [x] DO block de verificação final com RAISE NOTICE dos totais
 
-### 08-views.sql — Vistas ✅ (5 vistas)
-- [x] **vw_anomalias_detalhadas** — leituras anómalas com contexto de contador/utilizador + tipo_anomalia
-- [x] **vw_mercado_ativo** — ofertas ATIVA com nome/email do vendedor
-- [x] **vw_transacoes_detalhadas** — histórico completo com nomes de comprador e vendedor
-- [x] **vw_consumo_mensal** — kWh agregado por contador e mês (explora partições)
-- [x] **vw_resumo_utilizadores** — saldo, nº contadores, total gasto/recebido por utilizador
-
 ---
 
 ## 🌐 API EXPRESS.JS — 100% ✅
@@ -247,7 +240,6 @@ voltexchange/
 │           ├── 05-triggers.sql   ✅ 4 triggers (incl. auto-matching)
 │           ├── 06-seed-mini.sql  ✅ ~100 registos
 │           ├── 07-seed-massivo.sql ✅ 500.000+ leituras
-│           └── 08-views.sql      ✅ 5 vistas
 └── .github/
     ├── PROGRESSO.md              ✅ (este ficheiro)
     ├── plano-4-semanas.md        ✅
