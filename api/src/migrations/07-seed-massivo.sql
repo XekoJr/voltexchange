@@ -39,7 +39,7 @@ SELECT
 
     -- Datas uniformemente distribuídas 2025-01-01 → 2026-12-31 (730 dias)
     TIMESTAMP '2025-01-01 00:00:00'
-        + (series_num * INTERVAL '127 seconds')            AS data_hora,
+        + (series_num * INTERVAL '126 seconds')            AS data_hora,
 
     -- kWh aleatório entre 5 e 120 kWh (3 casas decimais)
     ROUND((5 + random() * 115)::numeric, 3)               AS kwh_leitura,

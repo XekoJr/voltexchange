@@ -4,22 +4,48 @@ services:
     image: postgres:16
     container_name: voltexchange-db
     environment:
-      POSTGRES_DB: 
-      POSTGRES_USER: 
-      POSTGRES_PASSWORD: 
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./migrations/01-ddl-voltexchange.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./migrations/02-partitions.sql:/docker-entrypoint-initdb.d/02-partitions.sql
+      - ./api/src/migrations/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./api/src/migrations/02-partitions.sql:/docker-entrypoint-initdb.d/02-partitions.sql
+      - ./api/src/migrations/03-indexes.sql:/docker-entrypoint-initdb.d/03-indexes.sql
+      - ./api/src/migrations/04-procedures.sql:/docker-entrypoint-initdb.d/04-procedures.sql
+      - ./api/src/migrations/05-triggers.sql:/docker-entrypoint-initdb.d/05-triggers.sql
+      - ./api/src/migrations/06-seed-mini.sql:/docker-entrypoint-initdb.d/06-seed-mini.sql
+      - ./api/src/migrations/07-seed-massivo.sql:/docker-entrypoint-initdb.d/07-seed-massivo.sql
     networks:
       - voltexchange-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Express.js API
+  api:
+    build:
+      context: ./api
+    container_name: voltexchange-api
+    environment:
+      PORT: ${PORT}
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - voltexchange-network
 
 volumes:
   postgres-data:
