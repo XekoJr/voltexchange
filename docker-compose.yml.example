@@ -14,10 +14,10 @@ services:
       - ./api/src/migrations/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./api/src/migrations/02-partitions.sql:/docker-entrypoint-initdb.d/02-partitions.sql
       - ./api/src/migrations/03-indexes.sql:/docker-entrypoint-initdb.d/03-indexes.sql
-      - ./api/src/migrations/04-procedures.sql:/docker-entrypoint-initdb.d/04-procedures.sql
-      - ./api/src/migrations/05-triggers.sql:/docker-entrypoint-initdb.d/05-triggers.sql
-      - ./api/src/migrations/06-seed-mini.sql:/docker-entrypoint-initdb.d/06-seed-mini.sql
-      - ./api/src/migrations/07-seed-massivo.sql:/docker-entrypoint-initdb.d/07-seed-massivo.sql
+      - ./api/src/migrations/04-seed-mini.sql:/docker-entrypoint-initdb.d/04-seed-mini.sql
+      - ./api/src/migrations/05-seed-massivo.sql:/docker-entrypoint-initdb.d/05-seed-massivo.sql
+      - ./api/src/migrations/06-procedures.sql:/docker-entrypoint-initdb.d/06-procedures.sql
+      - ./api/src/migrations/07-triggers.sql:/docker-entrypoint-initdb.d/07-triggers.sql
     networks:
       - voltexchange-network
     healthcheck:

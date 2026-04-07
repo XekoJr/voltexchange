@@ -1,6 +1,3 @@
-\echo ''
-\echo '>>> 04-procedures.sql: a criar stored procedures...'
-
 -- =============================================================================
 -- VoltExchange — 04-procedures.sql
 -- Stored Procedures ACID para o mercado P2P de energia
@@ -281,6 +278,3 @@ BEGIN
     RAISE NOTICE 'sp_MatchingEngine concluído. Total de matches realizados: %', v_matches;
 END;
 $$;
-
-\echo '>>> 04-procedures.sql: CONCLUIDO — 2 stored procedures criadas'
-\echo ''
