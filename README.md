@@ -1,272 +1,96 @@
-# ⚡ VoltExchange - Plataforma de Mercado P2P de Energia
+# ⚡ VoltExchange
 
-> **Disciplina**: Base de Dados II  
-> **Ano Letivo**: 2025/2026  
-> **Progresso**: 22% | **Status**: 🟡 Fase 1 em andamento
+A peer-to-peer energy trading marketplace, built as the practical project for a Database Systems II course. The interesting part isn't the CRUD — it's the PostgreSQL schema underneath: **range partitioning**, **targeted indexing**, **stored procedures with row-level locking**, and **triggers that drive an automatic order-matching engine**.
 
----
+## Overview
 
-## 📋 Índice
+VoltExchange lets **prosumers** (households with solar panels) sell surplus energy and **consumers** buy directly from their neighbors, with an automatic matching engine pairing buy orders against sell offers by price and region.
 
-- [Visão Geral](#visão-geral)
-- [Arquitetura](#arquitetura)
-- [Status do Projeto](#status-do-projeto)
-- [Estrutura do Repositório](#estrutura-do-repositório)
-- [Como Executar](#como-executar)
-- [Documentação](#documentação)
-- [Checkpoints](#checkpoints)
+- **Database**: PostgreSQL 16+
+- **API**: Node.js + Express, JWT auth, `pg` (no ORM — raw SQL, `CALL`/`SELECT` into stored procedures)
 
----
+## Database design
 
-## 🎯 Visão Geral
+Six tables: `Utilizadores` (users), `Contadores` (smart meters), `Leituras` (meter readings), `OfertasVenda` (sell offers), `OrdensCompra` (buy orders), `Transacoes` (settled trades).
 
-**VoltExchange** é uma plataforma de mercado peer-to-peer (P2P) que permite:
-- **Prosumers** (produtores domésticos com painéis solares) venderem excedentes de energia
-- **Consumidores** comprarem energia diretamente de vizinhos
-- **Matching automático** entre ordens de compra e ofertas de venda
+### Partitioning
 
-### Tecnologias
+`Leituras` (meter readings) is declared `PARTITION BY RANGE (data_hora)` and split into 24 monthly partitions spanning 2025–2026. This is the table that receives high-volume time-series writes (smart-meter telemetry) and is queried almost exclusively by date range, so range partitioning lets Postgres prune irrelevant partitions at query time instead of scanning half a million rows.
 
-- **Base de Dados**: PostgreSQL 16+
-- **Backend API**: Spring Boot 3 (Java + Gradle)
-- **Segurança**: JWT + BCrypt
-- **Deploy**: Railway/Render + Servidor da Escola
+### Indexing
 
----
+24 indexes, chosen to match actual query patterns rather than applied blanket-style:
+- **Partial indexes** on hot subsets only — e.g. `idx_ofertas_ativas_preco` indexes sell offers `WHERE estado = 'ATIVA'`, so the matching engine's price-ordered scan never touches sold/cancelled offers.
+- **GIN index** on `Leituras.dados_audit` (JSONB) for querying meter diagnostic payloads (temperature, error codes) without a fixed schema.
+- **Expression index** on `(dados_audit->>'temperatura')::numeric` so anomaly queries on the JSONB payload can use an index instead of a full scan.
+- **Composite indexes** aligned with the matching engine's access path — offers by `(regiao, preco_unitario, data_criacao)`, pending orders by the same shape — so the FIFO/best-price matching logic in `sp_MatchingEngine` hits an index instead of sorting on every run.
 
-## 🏗️ Arquitetura
+### Stored procedures
 
-```
-┌──────────────┐
-│   Cliente    │
-└──────┬───────┘
-       │ REST API
-       ▼
-┌──────────────────┐
-│  Spring Boot API │
-│  - Auth (JWT)    │
-│  - Market        │
-│  - Meters        │
-│  - Admin         │
-└────────┬─────────┘
-         │ JDBC
-         ▼
-┌─────────────────────────┐
-│  PostgreSQL (Escola)    │
-│  - 6 Tabelas            │
-│  - Leituras PARTIONADA  │
-│  - Stored Procedures    │
-│  - Triggers             │
-└─────────────────────────┘
-```
+- **`sp_ExecutarCompraDireta`** — direct purchase of a specific offer. Locks the offer and buyer rows with `FOR UPDATE`, validates funds/quantity/state, then updates balances, offer state, and inserts the transaction — all inside one procedure so a failure anywhere rolls the whole trade back.
+- **`sp_MatchingEngine`** — the core matching logic. Walks pending buy orders oldest-first, and for each one scans compatible active offers (price ≤ max, same region or unrestricted, different user) ordered by best price, settling partial fills across multiple offers until the order is filled or no compatible offer remains.
+- **`sp_QuarentenaUtilizador`** — administrative procedure that puts a user in quarantine: flags their meters for maintenance and cancels their active offers in one transaction.
 
----
+### Triggers
 
-## 📊 Status do Projeto
+- **`trg_DetectarAnomalias`** (`AFTER INSERT` on `Leituras`) — inspects the incoming reading's JSONB payload; if temperature exceeds a threshold or an error code is present, it flips the meter to `MANUTENCAO` automatically.
+- **`trg_ProtegerUtilizadores`** (`BEFORE DELETE` on `Utilizadores`) — blocks deletion of a user with a positive balance or active offers, forcing a proper withdrawal/cancellation first.
+- **`trg_AutoMatching_Ordem` / `trg_AutoMatching_Oferta`** (`AFTER INSERT`, statement-level, on `OrdensCompra`/`OfertasVenda`) — fire `sp_MatchingEngine()` automatically whenever new orders or offers land, so matching happens continuously without a separate scheduler.
 
-### ✅ Concluído (22%)
-
-- [x] Projeto Spring Boot criado e estruturado
-- [x] 6 tabelas criadas (`01-schema.sql`)
-- [x] **24 partições criadas (`02-partitions.sql`)** ✅
-- [x] Constraints, Foreign Keys e CHECKs
-- [x] application.properties configurado
-
-### 🚧 Em Progresso
-
-- [ ] Índices (GIN, B-tree, parciais) ⬅️ **PRÓXIMO**
-- [ ] Stored Procedures (sp_ExecutarCompraDireta, sp_MatchingEngine)
-- [ ] Triggers (DetectarAnomalias, ProtegerUtilizadores)
-
-### ⏳ Pendente
-
-- [ ] Entities completas
-- [ ] Repositories e Services
-- [ ] Controllers e DTOs
-- [ ] Segurança (JWT + BCrypt)
-- [ ] Seed massivo (500k leituras)
-- [ ] Deploy em cloud
-
-**Ver progresso detalhado**: [context/PROGRESSO.md](context/PROGRESSO.md)
-
----
-
-## 📁 Estrutura do Repositório
+## Repository structure
 
 ```
 voltexchange/
-├── api/                           # Spring Boot API
-│   ├── src/main/
-│   │   ├── java/com/voltexchange/api/
-│   │   │   ├── config/           # Segurança, CORS, Exception Handler
-│   │   │   ├── controller/       # REST Controllers
-│   │   │   ├── dto/              # Data Transfer Objects
-│   │   │   ├── entity/           # JPA Entities
-│   │   │   ├── repository/       # JPA Repositories
-│   │   │   ├── security/         # JWT, Filters
-│   │   │   └── service/          # Business Logic
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       └── application-prod.properties
-│   ├── build.gradle
-│   └── gradlew
-│
-├── migrations/                    # Scripts SQL
-│   ├── 01-schema.sql             ✅ Tabelas criadas
-│   ├── 02-partitions.sql         ✅ Partições criadas
-│   ├── 03-indexes.sql            🚧 A criar
-│   ├── 04-procedures.sql         🚧 A criar
-│   ├── 05-triggers.sql           🚧 A criar
-│   ├── 06-seed-mini.sql          ⏳ Pendente
-│   └── 07-seed-massivo.sql       ⏳ Pendente
-│
-├── context/                       # Documentação do projeto
-│   ├── PROGRESSO.md              # Checklist detalhado
-│   ├── plano-4-semanas.md        # Plano atualizado
-│   ├── requesitos.md             # Requisitos completos
-│   └── voltexchange-analise.md   # Análise técnica
-│
-├── docker-compose.yml             ⏳ A criar
-└── README.md                      ✅ Este ficheiro
+├── api/                    # Express API
+│   └── src/
+│       ├── config/         # DB connection pool
+│       ├── middleware/     # JWT auth
+│       ├── routes/         # auth, meters, market, admin
+│       └── migrations/     # numbered SQL scripts, in delivery order
+├── sql/                    # Final consolidated scripts (as submitted)
+│   ├── ddl.sql             # schema + partitions + indexes
+│   ├── logic.sql           # procedures + triggers
+│   └── seed.sql            # demo/test data
+├── BD2___projeto_2026-3.pdf   # Original assignment brief
+├── VoltExchange.postman_collection.json
+└── docker-compose.yml.example
 ```
 
----
+`sql/` holds the final, deduplicated scripts as delivered for grading. `api/src/migrations/` keeps the step-by-step history (schema → partitions → indexes → seed → procedures → triggers) for anyone who wants to see how the design evolved.
 
-## 🚀 Como Executar
-
-### Pré-requisitos
-
-- Java 17+
-- PostgreSQL 16+
-- Gradle 8+
-
-### 1. Configurar Base de Dados
+## Running it
 
 ```bash
-# Executar scripts na ordem:
-psql -U postgres -d voltexchange -f migrations/01-schema.sql
-psql -U postgres -d voltexchange -f migrations/02-partitions.sql
-psql -U postgres -d voltexchange -f migrations/03-indexes.sql
-# ... (quando criados)
+cp .env.example .env            # fill in DB credentials
+cp docker-compose.yml.example docker-compose.yml
+docker compose up
 ```
 
-### 2. Configurar API
+This spins up Postgres (seeded via `sql/ddl.sql` → `sql/logic.sql` → `sql/seed.sql`) and the API on the port set in `.env`.
+
+Without Docker:
 
 ```bash
-cd api
+psql -U postgres -d voltexchange -f sql/ddl.sql
+psql -U postgres -d voltexchange -f sql/logic.sql
+psql -U postgres -d voltexchange -f sql/seed.sql
 
-# Editar application.properties com suas credenciais
-nano src/main/resources/application.properties
-
-# Executar
-./gradlew bootRun
+cd api && npm install && npm run dev
 ```
 
-### 3. Testar
+Seed data includes ~500,000 meter readings across 10 meters, 1,000 sell offers and 500 buy orders — enough volume to see the partitioning and indexing actually matter (`EXPLAIN ANALYZE` on a date-ranged reading query hits one partition, not all 24).
 
-```bash
-# Registar utilizador
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"nome":"João Silva","email":"joao@example.com","password":"senha123"}'
+## API
 
-# Login
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"joao@example.com","password":"senha123"}'
-```
+| Area | Endpoints |
+|---|---|
+| Auth (public) | `POST /api/auth/register`, `POST /api/auth/login` |
+| Meters (JWT) | `POST /api/meters/readings`, `GET /api/meters/:id/readings` |
+| Market (JWT) | `GET /api/market/offers`, `POST /api/market/offers`, `POST /api/market/buy`, `POST /api/market/order` |
+| Admin (JWT) | `GET /api/admin/anomalies`, `GET /api/admin/meters/maintenance` |
 
----
+A full Postman collection is included (`VoltExchange.postman_collection.json`) with example requests for every endpoint.
 
-## 📚 Documentação
+## Author
 
-### Scripts SQL
-
-| Ficheiro | Descrição | Status |
-|----------|-----------|--------|
-| `01-schema.sql` | Criação das 6 tabelas | ✅ |
-| `02-partitions.sql` | Partições mensais Leituras (2025-2026) | ✅ |
-| `03-indexes.sql` | Índices GIN, B-tree, parciais | 👉 **PRÓXIMO** |
-| `04-procedures.sql` | sp_ExecutarCompraDireta + sp_MatchingEngine | 🚧 |
-| `05-triggers.sql` | Detecção anomalias + Proteção utilizadores | 🚧 |
-| `06-seed-mini.sql` | ~100 registos para testes | ⏳ |
-| `07-seed-massivo.sql` | 500k+ leituras, 1k+ ofertas | ⏳ |
-
-### Endpoints da API (Planeados)
-
-#### Autenticação
-- `POST /api/auth/register` - Registar utilizador
-- `POST /api/auth/login` - Login (retorna JWT)
-
-#### Leituras de Contadores
-- `POST /api/meters/readings` - Inserir leitura
-- `GET /api/meters/{id}/readings` - Listar leituras
-
-#### Mercado
-- `GET /api/market/offers` - Listar ofertas ativas
-- `POST /api/market/offers` - Criar oferta de venda
-- `POST /api/market/buy` - Comprar oferta (chama procedure)
-- `POST /api/market/order` - Criar ordem de compra
-- `POST /api/market/match` - Executar matching engine
-
-#### Administração
-- `GET /api/admin/anomalies` - Listar anomalias (JSONB query)
-- `GET /api/admin/meters/maintenance` - Contadores em manutenção
-
----
-
-## 🎯 Checkpoints
-
-### Checkpoint 1 (8 Abril 2026)
-**Objetivo**: Base de dados funcional + API com autenticação
-
-- [ ] DDL executado no servidor da escola
-- [ ] Todas as procedures funcionais
-- [ ] 500.000+ leituras carregadas
-- [ ] 1.000+ ofertas carregadas
-- [ ] API com autenticação (JWT) funcional
-- [ ] Endpoint de leituras funcional
-
-### Checkpoint 2 (13 Maio 2026)
-**Objetivo**: Sistema completo deployed
-
-- [ ] API deployed em cloud (Railway/Render)
-- [ ] Todos os endpoints funcionais
-- [ ] Testes de segurança realizados (SQL Injection, etc.)
-- [ ] Relatório técnico completo (PDF)
-- [ ] Postman collection entregue
-- [ ] Defesa preparada
-
----
-
-## 👥 Equipa
-
-- **Pessoa 1**: API Spring Boot (Backend + Segurança)
-- **Pessoa 2**: Base de Dados PostgreSQL (Schema + Lógica)
-
-**Nota**: Ambas as pessoas devem conseguir explicar TODO o projeto!
-
----
-
-## 📖 Recursos Úteis
-
-- [Plano Detalhado (4 Semanas)](context/plano-4-semanas.md)
-- [Progresso Detalhado](context/PROGRESSO.md)
-- [Requisitos Completos](context/requesitos.md)
-- [Análise Técnica](context/voltexchange-analise.md)
-
----
-
-## 🎓 Critérios de Excelência
-
-Para nota máxima, implementar:
-- ✅ Trigger de Auto-Matching
-- ✅ EXPLAIN ANALYZE documentado
-- ✅ Diagrama ER profissional
-- ✅ Testes de SQL Injection documentados
-- ✅ Código comentado e organizado
-
----
-
-**Última atualização**: 14 Março 2026  
-**Próximas prioridades**: ✅ Partições → 🔴 Índices → Procedures
+Built end-to-end (schema, procedures, triggers, and API) by André Pacheco as the Database Systems II project.

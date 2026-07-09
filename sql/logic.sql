@@ -1,3 +1,88 @@
+-- -------------------------------------------------------------
+-- 06-checkpoint1.sql
+-- -------------------------------------------------------------
+
+-- Exercicio 1: Trigger de Protecao Financeira
+CREATE OR REPLACE FUNCTION fn_ProtegerUtilizadores()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_ofertas_ativas INTEGER;
+BEGIN
+    IF OLD.saldo > 0 THEN
+        RAISE EXCEPTION
+            'Nao e possivel eliminar o utilizador % — tem saldo positivo de €%. Efectue o levantamento primeiro.',
+            OLD.utilizador_id, OLD.saldo;
+    END IF;
+
+    SELECT COUNT(*) INTO v_ofertas_ativas
+    FROM OfertasVenda
+    WHERE vendedor_id = OLD.utilizador_id
+      AND estado = 'ATIVA';
+
+    IF v_ofertas_ativas > 0 THEN
+        RAISE EXCEPTION
+            'Nao e possivel eliminar o utilizador % — tem % oferta(s) ATIVA(s). Cancele-as primeiro.',
+            OLD.utilizador_id, v_ofertas_ativas;
+    END IF;
+
+    RETURN OLD;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_ProtegerUtilizadores ON Utilizadores;
+CREATE TRIGGER trg_ProtegerUtilizadores
+    BEFORE DELETE ON Utilizadores
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_ProtegerUtilizadores();
+
+
+-- Exercicio 2: Stored Procedure - Utilizador em quarentena: bloqueia contadores e cancela ofertas.
+CREATE OR REPLACE PROCEDURE sp_QuarentenaUtilizador(p_utilizador_id INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM Utilizadores WHERE utilizador_id = p_utilizador_id
+    ) THEN
+        RAISE EXCEPTION 'Utilizador % nao encontrado.', p_utilizador_id;
+    END IF;
+
+    UPDATE Contadores
+    SET estado = 'MANUTENCAO'
+    WHERE utilizador_id = p_utilizador_id;
+
+    UPDATE OfertasVenda
+    SET estado = 'CANCELADA'
+    WHERE vendedor_id = p_utilizador_id
+      AND estado = 'ATIVA';
+
+    RAISE NOTICE 'Utilizador % colocado em quarentena.', p_utilizador_id;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'Erro ao colocar utilizador % em quarentena — rollback efectuado. Detalhe: %',
+            p_utilizador_id, SQLERRM;
+END;
+$$;
+
+-- TESTES
+-- 1
+DELETE FROM Utilizadores WHERE utilizador_id = 1;
+
+-- 2
+CALL sp_QuarentenaUtilizador(7);
+
+
+SELECT contador_id, estado FROM Contadores WHERE utilizador_id = 7;
+SELECT oferta_id, estado FROM OfertasVenda WHERE vendedor_id = 7;
+
+
+-- -------------------------------------------------------------
+-- 07-procedures.sql
+-- -------------------------------------------------------------
+
 CREATE OR REPLACE PROCEDURE sp_ExecutarCompraDireta(
     p_oferta_id    INTEGER,
     p_comprador_id INTEGER,
@@ -129,7 +214,7 @@ BEGIN
                   OR regiao IS NULL
                   OR regiao = v_ordem.regiao
               )
-              AND vendedor_id != v_ordem.comprador_id  
+              AND vendedor_id != v_ordem.comprador_id
             ORDER BY preco_unitario ASC, data_criacao ASC
             FOR UPDATE
         LOOP
@@ -206,3 +291,110 @@ BEGIN
     RAISE NOTICE 'sp_MatchingEngine concluído. Total de matches realizados: %', v_matches;
 END;
 $$;
+
+
+-- -------------------------------------------------------------
+-- 08-triggers.sql
+-- -------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION fn_DetectarAnomalias()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_temperatura NUMERIC;
+    v_erro_codigo TEXT;
+    v_anomalia    BOOLEAN := FALSE;
+    v_motivo      TEXT    := '';
+BEGIN
+    IF NEW.dados_audit ? 'temperatura' THEN
+        v_temperatura := (NEW.dados_audit->>'temperatura')::numeric;
+        IF v_temperatura > 80 THEN
+            v_anomalia := TRUE;
+            v_motivo   := v_motivo || format('temperatura crítica: %s°C; ', v_temperatura);
+        END IF;
+    END IF;
+
+    v_erro_codigo := NEW.dados_audit->>'erro_codigo';
+    IF v_erro_codigo IS NOT NULL THEN
+        v_anomalia := TRUE;
+        v_motivo   := v_motivo || format('erro_codigo: %s; ', v_erro_codigo);
+    END IF;
+
+    IF v_anomalia THEN
+        UPDATE Contadores
+        SET estado = 'MANUTENCAO'
+        WHERE contador_id = NEW.contador_id;
+
+        RAISE NOTICE 'ANOMALIA DETECTADA — Contador % → MANUTENCAO | Leitura % | Motivo: %',
+            NEW.contador_id, NEW.leitura_id, v_motivo;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_DetectarAnomalias ON Leituras;
+CREATE TRIGGER trg_DetectarAnomalias
+    AFTER INSERT ON Leituras
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_DetectarAnomalias();
+
+
+CREATE OR REPLACE FUNCTION fn_ProtegerUtilizadores()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_transacoes_recentes INTEGER;
+BEGIN
+    IF OLD.saldo > 0 THEN
+        RAISE EXCEPTION
+            'Não é possível eliminar o utilizador % (%) com saldo positivo de €%. Efectue o levantamento primeiro.',
+            OLD.utilizador_id, OLD.email, OLD.saldo;
+    END IF;
+
+    SELECT COUNT(*)
+    INTO v_transacoes_recentes
+    FROM Transacoes
+    WHERE (comprador_id = OLD.utilizador_id OR vendedor_id = OLD.utilizador_id)
+      AND data_transacao >= NOW() - INTERVAL '30 days';
+
+    IF v_transacoes_recentes > 0 THEN
+        RAISE EXCEPTION
+            'Não é possível eliminar o utilizador % (%) com % transação(ões) nos últimos 30 dias.',
+            OLD.utilizador_id, OLD.email, v_transacoes_recentes;
+    END IF;
+
+    RETURN OLD;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_ProtegerUtilizadores ON Utilizadores;
+CREATE TRIGGER trg_ProtegerUtilizadores
+    BEFORE DELETE ON Utilizadores
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_ProtegerUtilizadores();
+
+
+CREATE OR REPLACE FUNCTION fn_AutoMatching()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    CALL sp_MatchingEngine();
+    RETURN NULL;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_AutoMatching_Ordem ON OrdensCompra;
+CREATE TRIGGER trg_AutoMatching_Ordem
+    AFTER INSERT ON OrdensCompra
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION fn_AutoMatching();
+
+DROP TRIGGER IF EXISTS trg_AutoMatching_Oferta ON OfertasVenda;
+CREATE TRIGGER trg_AutoMatching_Oferta
+    AFTER INSERT ON OfertasVenda
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION fn_AutoMatching();
