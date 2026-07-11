@@ -67,18 +67,6 @@ EXCEPTION
 END;
 $$;
 
--- TESTES
--- 1
-DELETE FROM Utilizadores WHERE utilizador_id = 1;
-
--- 2
-CALL sp_QuarentenaUtilizador(7);
-
-
-SELECT contador_id, estado FROM Contadores WHERE utilizador_id = 7;
-SELECT oferta_id, estado FROM OfertasVenda WHERE vendedor_id = 7;
-
-
 -- -------------------------------------------------------------
 -- 07-procedures.sql
 -- -------------------------------------------------------------

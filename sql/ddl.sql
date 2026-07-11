@@ -63,7 +63,7 @@ CREATE TABLE OfertasVenda (
         FOREIGN KEY (vendedor_id)
         REFERENCES Utilizadores(utilizador_id)
         ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT chk_ofertas_quantidade CHECK (quantidade_kwh > 0),
+    CONSTRAINT chk_ofertas_quantidade CHECK (quantidade_kwh >= 0),
     CONSTRAINT chk_ofertas_preco CHECK (preco_unitario > 0),
     CONSTRAINT chk_ofertas_estado CHECK (estado IN ('ATIVA', 'VENDIDA', 'CANCELADA')),
     CONSTRAINT chk_ofertas_expiracao CHECK (data_expiracao IS NULL OR data_expiracao > data_criacao)
