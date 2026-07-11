@@ -1,14 +1,7 @@
 const router = require('express').Router();
 const db = require('../config/database');
 const auth = require('../middleware/auth');
-
-const errResponse = (res, status, msg) =>
-  res.status(status).json({ timestamp: new Date(), status, erro: msg });
-
-const getUserId = async (email) => {
-  const r = await db.query('SELECT utilizador_id FROM utilizadores WHERE email = $1', [email]);
-  return r.rows.length ? r.rows[0].utilizador_id : null;
-};
+const { errResponse, getUserId } = require('../utils/helpers');
 
 // GET /api/meters — list authenticated user's meters
 router.get('/', auth, async (req, res) => {

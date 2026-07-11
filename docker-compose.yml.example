@@ -43,6 +43,22 @@ services:
     networks:
       - voltexchange-network
 
+  # Vue.js frontend (nginx)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: voltexchange-frontend
+    environment:
+      # URL pública da API vista pelo BROWSER (porta publicada no host),
+      # não o hostname interno do Docker — os fetch acontecem no cliente
+      API_BASE_URL: http://localhost:${PORT}
+    ports:
+      - "${FRONTEND_PORT:-8095}:80"
+    depends_on:
+      - api
+    networks:
+      - voltexchange-network
+
 volumes:
   postgres-data:
 

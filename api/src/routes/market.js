@@ -1,14 +1,7 @@
 const router = require('express').Router();
 const db = require('../config/database');
 const auth = require('../middleware/auth');
-
-const errResponse = (res, status, msg) =>
-  res.status(status).json({ timestamp: new Date(), status, erro: msg });
-
-const getUserId = async (email) => {
-  const r = await db.query('SELECT utilizador_id FROM utilizadores WHERE email = $1', [email]);
-  return r.rows.length ? r.rows[0].utilizador_id : null;
-};
+const { errResponse, getUserId } = require('../utils/helpers');
 
 // GET /api/market/offers?regiao= — list active offers ordered by price
 router.get('/offers', auth, async (req, res) => {
@@ -106,6 +99,52 @@ router.post('/order', auth, async (req, res) => {
     return res.status(201).json(result.rows[0]);
   } catch (e) {
     console.error('criar ordem error:', e.message);
+    return errResponse(res, 500, 'Erro interno do servidor');
+  }
+});
+
+// PATCH /api/market/offers/:id/cancel — cancel own active offer
+router.patch('/offers/:id/cancel', auth, async (req, res) => {
+  const ofertaId = parseInt(req.params.id);
+  if (isNaN(ofertaId)) return errResponse(res, 400, 'id inválido');
+
+  try {
+    const userId = await getUserId(req.user.email);
+    if (!userId) return errResponse(res, 401, 'Utilizador não encontrado');
+
+    const result = await db.query(
+      "UPDATE ofertasvenda SET estado = 'CANCELADA' WHERE oferta_id = $1 AND vendedor_id = $2 AND estado = 'ATIVA' RETURNING *",
+      [ofertaId, userId]
+    );
+    if (!result.rows.length) {
+      return errResponse(res, 404, 'Oferta ativa não encontrada para este utilizador');
+    }
+    return res.json(result.rows[0]);
+  } catch (e) {
+    console.error('cancelar oferta error:', e.message);
+    return errResponse(res, 500, 'Erro interno do servidor');
+  }
+});
+
+// PATCH /api/market/order/:id/cancel — cancel own pending order
+router.patch('/order/:id/cancel', auth, async (req, res) => {
+  const ordemId = parseInt(req.params.id);
+  if (isNaN(ordemId)) return errResponse(res, 400, 'id inválido');
+
+  try {
+    const userId = await getUserId(req.user.email);
+    if (!userId) return errResponse(res, 401, 'Utilizador não encontrado');
+
+    const result = await db.query(
+      "UPDATE ordenscompra SET estado = 'CANCELADA' WHERE ordem_id = $1 AND comprador_id = $2 AND estado = 'PENDENTE' RETURNING *",
+      [ordemId, userId]
+    );
+    if (!result.rows.length) {
+      return errResponse(res, 404, 'Ordem pendente não encontrada para este utilizador');
+    }
+    return res.json(result.rows[0]);
+  } catch (e) {
+    console.error('cancelar ordem error:', e.message);
     return errResponse(res, 500, 'Erro interno do servidor');
   }
 });

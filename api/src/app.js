@@ -1,22 +1,27 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 
 const authRoutes = require('./routes/auth');
 const meterRoutes = require('./routes/meters');
 const marketRoutes = require('./routes/market');
 const adminRoutes = require('./routes/admin');
+const meRoutes = require('./routes/me');
+const { authLimiter } = require('./middleware/rateLimit');
 
 const app = express();
 
-app.use(cors());
+app.use(helmet());
+app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true }));
 app.use(express.json());
 
 // Health check — public
 app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'VoltExchange API' }));
 
 // Routes
-app.use('/api/auth', authRoutes);      // public
+app.use('/api/auth', authLimiter, authRoutes);      // public — rate-limited (força bruta/spam)
+app.use('/api/me', meRoutes);          // protected
 app.use('/api/meters', meterRoutes);   // protected
 app.use('/api/market', marketRoutes);  // protected
 app.use('/api/admin', adminRoutes);    // protected

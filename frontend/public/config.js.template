@@ -1,0 +1,4 @@
+// Gerado em runtime pelo docker-entrypoint.sh — nunca editar manualmente
+window.APP_CONFIG = {
+  API_URL: "${API_BASE_URL}",
+};
