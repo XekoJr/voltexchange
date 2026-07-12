@@ -52,25 +52,25 @@ Six tables: `Utilizadores` (users), `Contadores` (smart meters), `Leituras` (met
 
 ```
 voltexchange/
-├── api/                    # Express API
-│   └── src/
-│       ├── config/         # DB connection pool
-│       ├── middleware/     # JWT auth
-│       ├── routes/         # auth, me, meters, market, admin
-│       ├── utils/          # shared route helpers
-│       └── migrations/     # numbered SQL scripts, in delivery order
-├── frontend/               # Vue 3 + Vite + Tailwind dashboard
-│   └── src/
-│       ├── api/            # axios client + endpoint functions
-│       ├── stores/         # Pinia (auth, user, toast)
-│       ├── views/          # Dashboard, Market, Activity, Meters, Internals
-│       ├── components/     # layout, ui, dashboard
-│       └── i18n/           # en.json / pt.json (browser-language detection)
-├── sql/                    # Final consolidated scripts (as submitted)
-│   ├── ddl.sql             # schema + partitions + indexes
-│   ├── logic.sql           # procedures + triggers
-│   └── seed.sql            # demo/test data
-├── BD2___projeto_2026-3.pdf   # Original assignment brief
+├── api/                     # Express API
+│   └── src/ 
+│       ├── config/          # DB connection pool
+│       ├── middleware/      # JWT auth
+│       ├── routes/          # auth, me, meters, market, admin
+│       ├── utils/           # shared route helpers
+│       └── migrations/      # numbered SQL scripts, in delivery order
+├── frontend/                # Vue 3 + Vite + Tailwind dashboard
+│   └── src/ 
+│       ├── api/             # axios client + endpoint functions
+│       ├── stores/          # Pinia (auth, user, toast)
+│       ├── views/           # Dashboard, Market, Activity, Meters, Internals
+│       ├── components/      # layout, ui, dashboard
+│       └── i18n/            # en.json / pt.json (browser-language detection)
+├── sql/                     # Final consolidated scripts (as submitted)
+│   ├── ddl.sql              # schema + partitions + indexes
+│   ├── logic.sql            # procedures + triggers
+│   └── seed.sql             # demo/test data
+├── BD2___projeto_2026-3.pdf # Original assignment brief
 ├── VoltExchange.postman_collection.json
 └── docker-compose.yml.example
 ```
