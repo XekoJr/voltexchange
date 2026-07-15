@@ -13,7 +13,9 @@ const { authLimiter } = require('./middleware/rateLimit');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true }));
+// No CORS_ORIGIN set → fall back to the known production origin, never to
+// "true" (which would accept any origin, including an attacker's site).
+app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : 'https://volt.andrepacheco.pt' }));
 app.use(express.json());
 
 // Health check — public
